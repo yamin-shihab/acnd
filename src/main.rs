@@ -1,3 +1,7 @@
+mod game;
+
+use crate::game::Game;
+
 fn main() {
-    println!("It's ACND time...");
+    let mut game = Game::new();
 }
