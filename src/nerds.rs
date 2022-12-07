@@ -7,22 +7,10 @@ pub const JOE: Nerd = Nerd::new(
 	200,
 	10,
 	[
-		Action::Damage {
-			name: "Slap",
-			value: 30,
-		},
-		Action::Heal {
-			name: "Band-Aid",
-			value: 20,
-		},
-		Action::Weaken {
-			name: "Pinch",
-			value: 0.20,
-		},
-		Action::Strengthen {
-			name: "Khan Academy",
-			value: 0.20,
-		},
+		Action::Damage(ActionStats::new("Slap", 30)),
+		Action::Heal(ActionStats::new("Band-Aid", 20)),
+		Action::Weaken(ActionStats::new("Pinch", 0.20)),
+		Action::Strengthen(ActionStats::new("Khan Academy", 0.20)),
 	],
 	" / \\
 | \" |
@@ -39,22 +27,10 @@ pub const ISAAC: Nerd = Nerd::new(
 	100,
 	5,
 	[
-		Action::Damage {
-			name: "Meter Ruler Katana",
-			value: 60,
-		},
-		Action::Heal {
-			name: "Self Confidence and Motivation",
-			value: 20,
-		},
-		Action::Weaken {
-			name: "Threaten with Scissors",
-			value: 0.40,
-		},
-		Action::Strengthen {
-			name: "Steroids",
-			value: 0.20,
-		},
+		Action::Damage(ActionStats::new("Meter Ruler Katana", 60)),
+		Action::Heal(ActionStats::new("Self Confidence and Motivation", 20)),
+		Action::Weaken(ActionStats::new("Threaten with Scissors", 0.40)),
+		Action::Strengthen(ActionStats::new("Steroids", 0.20)),
 	],
 	" (\")
  \\-/
@@ -71,22 +47,10 @@ pub const WILLIAM: Nerd = Nerd::new(
 	400,
 	20,
 	[
-		Action::Damage {
-			name: "Curse/Swear Words",
-			value: 30,
-		},
-		Action::Heal {
-			name: "Meditation",
-			value: 10,
-		},
-		Action::Weaken {
-			name: "Intimidating Stare",
-			value: 0.10,
-		},
-		Action::Strengthen {
-			name: "Inflatable Dumbbells",
-			value: 0.20,
-		},
+		Action::Damage(ActionStats::new("Curse/Swear Words", 30)),
+		Action::Heal(ActionStats::new("Meditation", 10)),
+		Action::Weaken(ActionStats::new("Intimidating Stare", 0.10)),
+		Action::Strengthen(ActionStats::new("Inflatable Dumbbells", 0.20)),
 	],
 	"   __
   /''\\
@@ -103,22 +67,10 @@ pub const SUZIE: Nerd = Nerd::new(
 	200,
 	10,
 	[
-		Action::Damage {
-			name: "Insult",
-			value: 15,
-		},
-		Action::Heal {
-			name: "First Aid Kit + 911",
-			value: 40,
-		},
-		Action::Weaken {
-			name: "Threaten to Tell Teacher",
-			value: 0.10,
-		},
-		Action::Strengthen {
-			name: "Watch Dhar Man Video",
-			value: 0.40,
-		},
+		Action::Damage(ActionStats::new("Insult", 15)),
+		Action::Heal(ActionStats::new("First Aid Kit", 40)),
+		Action::Weaken(ActionStats::new("Threaten to Tell Teacher", 0.10)),
+		Action::Strengthen(ActionStats::new("Watch Dhar Man Video", 0.40)),
 	],
 	" //\"\\\\
 / \\~/ \\
@@ -130,8 +82,29 @@ pub const SUZIE: Nerd = Nerd::new(
  /   \\",
 );
 
-pub struct Nerd {
+#[derive(Copy, Clone)]
+pub struct ActionStats<T> {
 	name: &'static str,
+	value: T,
+}
+
+impl<T> ActionStats<T> {
+	pub const fn new(name: &'static str, value: T) -> Self {
+		Self { name, value }
+	}
+}
+
+#[derive(Copy, Clone)]
+pub enum Action {
+	Damage(ActionStats<u32>),
+	Heal(ActionStats<u32>),
+	Weaken(ActionStats<f64>),
+	Strengthen(ActionStats<f64>),
+}
+
+#[derive(Copy, Clone)]
+pub struct Nerd {
+	pub name: &'static str,
 	health: i32,
 	defense: i32,
 	multiplier: f64,
@@ -156,11 +129,4 @@ impl Nerd {
 			sprite,
 		}
 	}
-}
-
-pub enum Action {
-	Damage { name: &'static str, value: u32 },
-	Heal { name: &'static str, value: u32 },
-	Weaken { name: &'static str, value: f64 },
-	Strengthen { name: &'static str, value: f64 },
 }

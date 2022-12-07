@@ -11,4 +11,4 @@ The game is still being made, and I have to finish it in about two weeks. How I 
 * Have multiple nerds (characters/classes) to choose from with different specialties, like Street Fighter, Mortal Kombat, hero shooters, etc.
 * Have humor; after all, the demographic is a bunch of thirteen year olds,
 * Involve math by making all damage/health/multipliers taken and given be a math expression that has to be solved; otherwise, you fail.
-* Be simple and not complicated: probably the only slightly complex mechanic should be multipliers. I only have about two weeks to finish a good game.
+* Be simple and not complicated: probably the only slightly complex mechanic should be multipliers. I only have two weeks to finish a polished game.
