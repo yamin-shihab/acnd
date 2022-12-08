@@ -33,17 +33,18 @@ const LOGO_TEXT: &str = "  ___  _____  _   _______
 | | | | \\__/\\| |\\  | |/ /
 \\_| |_/\\____/\\_| \\_/___/";
 const LOGO_COLOR: Color = Color::Blue;
-const QUIT_TEXT: &str = "Press 'q' to quit at any time, and 'enter' to start";
+const QUIT_TEXT: &str = "Press 'q' to quit at any time";
 const NERDS: [&Nerd; 4] = [&nerds::JOE, &nerds::ISAAC, &nerds::WILLIAM, &nerds::SUZIE];
 const SELECT_TEXT: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
 const SELECT_COLOR: Color = Color::Magenta;
+const START_TEXT: &str = "Press the enter/return key to start the game or skip the intro";
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
 	engine: ConsoleEngine,
 	width: u32,
 	height: u32,
-	currently_selected: usize,
+	current_selection: usize,
 	selects: [usize; 2],
 }
 
@@ -61,7 +62,7 @@ impl Tui {
 			engine,
 			width,
 			height,
-			currently_selected: 0,
+			current_selection: 0,
 			selects: [0, 0],
 		}
 	}
@@ -107,16 +108,13 @@ impl Tui {
 
 	// Draws the intro
 	fn draw_intro(&mut self) {
-		let intro_pos: [Point; 2] = [
+		let pos = |text: &str, pos| {
 			Point::new(
-				self.width / 2 - INTRO_TEXT[0].len() as u32 / 2,
-				self.height / 2 - 1,
-			),
-			Point::new(
-				self.width / 2 - INTRO_TEXT[1].len() as u32 / 2,
-				self.height / 2,
-			),
-		];
+				self.width / 2 - text.len() as u32 / 2,
+				((self.height / 2) as i32 + pos) as u32,
+			)
+		};
+		let intro_pos = [pos(INTRO_TEXT[0], -1), pos(INTRO_TEXT[1], 0)];
 		self.engine
 			.print(intro_pos[0].x as i32, intro_pos[0].y as i32, INTRO_TEXT[0]);
 		if self.engine.frame_count as u32 / FPS >= INTRO_TIME {
@@ -133,16 +131,12 @@ impl Tui {
 	// Draws the main menu
 	fn draw_menu(&mut self) {
 		self.draw_logo();
-		let quit_pos = Point::new(
-			self.width / 2 - QUIT_TEXT.len() as u32 / 2,
-			self.height / 2 - 2,
-		);
-		self.engine
-			.print(quit_pos.x as i32, quit_pos.y as i32, QUIT_TEXT);
-		[0, 1].map(|n| {
+		[(QUIT_TEXT, -2), (START_TEXT, 3)].map(|message| self.draw_message(message.0, message.1));
+		[0, 1].map(|selection| {
 			self.draw_select(
-				&[SELECT_TEXT[n], NERDS[self.selects[n]].name].concat(),
-				n as u32,
+				&[SELECT_TEXT[selection], NERDS[self.selects[selection]].name].concat(),
+				selection as i32,
+				selection == self.current_selection,
 			)
 		});
 		self.menu_input();
@@ -163,21 +157,26 @@ impl Tui {
 		);
 	}
 
+	// Draws either the quit or start message
+	fn draw_message(&mut self, text: &str, pos: i32) {
+		let pos = Point::new(
+			self.width / 2 - text.len() as u32 / 2,
+			((self.height / 2) as i32 + pos) as u32,
+		);
+		self.engine.print(pos.x as i32, pos.y as i32, text);
+	}
+
 	// Draws a selectable option in the main menu
-	fn draw_select(&mut self, select_text: &str, position: u32) {
+	fn draw_select(&mut self, select_text: &str, pos: i32, selected: bool) {
 		let select_pos = Point::new(
 			self.width / 2 - select_text.len() as u32 / 2,
-			self.height / 2 + position,
+			((self.height / 2) as i32 + pos) as u32,
 		);
 		self.engine.print_fbg(
 			select_pos.x as i32,
 			select_pos.y as i32,
 			select_text,
-			if position == self.currently_selected as u32 {
-				SELECT_COLOR
-			} else {
-				Color::Reset
-			},
+			if selected { SELECT_COLOR } else { Color::Reset },
 			Color::Reset,
 		);
 	}
@@ -185,24 +184,24 @@ impl Tui {
 	// Manages input in the main menu
 	fn menu_input(&mut self) {
 		if self.engine.is_key_pressed(UP_KEY) {
-			Self::change_selected(&mut self.currently_selected, 1, 1);
+			Self::change_selected(&mut self.current_selection, 1, 1);
 		} else if self.engine.is_key_pressed(DOWN_KEY) {
-			Self::change_selected(&mut self.currently_selected, 1, -1);
+			Self::change_selected(&mut self.current_selection, 1, -1);
 		} else if self.engine.is_key_pressed(LEFT_KEY) {
-			Self::change_selected(&mut self.selects[self.currently_selected], 3, -1);
+			Self::change_selected(&mut self.selects[self.current_selection], 3, -1);
 		} else if self.engine.is_key_pressed(RIGHT_KEY) {
-			Self::change_selected(&mut self.selects[self.currently_selected], 3, 1);
+			Self::change_selected(&mut self.selects[self.current_selection], 3, 1);
 		}
 	}
 
 	// Changes the value of the currently selected main menu option
-	fn change_selected(value: &mut usize, max: usize, diff: i32) {
-		if *value == 0 && diff == -1 {
+	fn change_selected(value: &mut usize, max: usize, pos: i32) {
+		if *value == 0 && pos == -1 {
 			*value = max;
-		} else if *value == max && diff == 1 {
+		} else if *value == max && pos == 1 {
 			*value = 0;
 		} else {
-			let n = *value as i32 + diff;
+			let n = *value as i32 + pos;
 			*value = n as usize;
 		}
 	}
