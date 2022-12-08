@@ -1,3 +1,6 @@
+// Used to represent the two players
+pub type Nerds = Option<[Nerd; 2]>;
+
 // Values that change damage done
 const BASE_MULTIPLIER: f64 = 1.0;
 const CRITICAL_CHANCE: u32 = 15;
@@ -90,8 +93,8 @@ pub const SUZIE: Nerd = Nerd::new(
 // Name and amount of action
 #[derive(Copy, Clone)]
 pub struct ActionStats<T> {
-	name: &'static str,
-	value: T,
+	pub name: &'static str,
+	pub value: T,
 }
 
 impl<T> ActionStats<T> {
@@ -114,10 +117,10 @@ pub enum Action {
 #[derive(Copy, Clone)]
 pub struct Nerd {
 	pub name: &'static str,
-	health: i32,
-	defense: i32,
-	multiplier: f64,
-	actions: [Action; 4],
+	pub health: i32,
+	pub defense: i32,
+	pub multiplier: f64,
+	pub actions: [Action; 4],
 	pub sprite: &'static str,
 }
 

@@ -1,4 +1,4 @@
-use crate::nerds::{self, Nerd};
+use crate::nerds::Nerds;
 use crate::tui::Tui;
 
 // Represents the possible states the game can be in
@@ -14,7 +14,7 @@ pub enum GameState {
 pub struct Game {
 	tui: Tui,
 	game_state: GameState,
-	nerds: Option<[Nerd; 2]>,
+	nerds: Nerds,
 	current_player: usize,
 }
 
@@ -46,7 +46,7 @@ impl Game {
 			self.game_state = GameState::MainMenu;
 		} else if self.game_state == GameState::MainMenu && self.tui.game_start() {
 			self.game_state = GameState::InGame;
-			self.nerds = Some(self.tui.selected_nerds());
+			self.nerds = self.tui.selected_nerds();
 		}
 	}
 }

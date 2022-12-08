@@ -1,5 +1,5 @@
 use crate::game::GameState;
-use crate::nerds::{self, Nerd};
+use crate::nerds::{self, Nerd, Nerds};
 use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 use std::process;
@@ -67,7 +67,7 @@ impl Tui {
 	}
 
 	// Updates the TUI
-	pub fn update(&mut self, game_state: GameState, nerds: &Option<[Nerd; 2]>) {
+	pub fn update(&mut self, game_state: GameState, nerds: &Nerds) {
 		self.draw(game_state, nerds);
 		self.engine.draw();
 		self.engine.clear_screen();
@@ -91,16 +91,16 @@ impl Tui {
 	}
 
 	// Returns the nerds selected in the main menu
-	pub fn selected_nerds(&self) -> [Nerd; 2] {
-		[*NERDS[self.selects[0]], *NERDS[self.selects[1]]]
+	pub fn selected_nerds(&self) -> Nerds {
+		Some([*NERDS[self.selects[0]], *NERDS[self.selects[1]]])
 	}
 
 	// Draws everything related to the current game state
-	fn draw(&mut self, game_state: GameState, nerds: &Option<[Nerd; 2]>) {
+	fn draw(&mut self, game_state: GameState, nerds: &Nerds) {
 		match game_state {
 			GameState::Intro => self.draw_intro(),
 			GameState::MainMenu => self.draw_menu(),
-			GameState::InGame => self.draw_game(),
+			GameState::InGame => self.draw_game(nerds),
 			GameState::GameEnd => self.draw_end(),
 		}
 	}
@@ -208,8 +208,12 @@ impl Tui {
 	}
 
 	// Draws the game
-	fn draw_game(&mut self) {}
+	fn draw_game(&mut self, nerds: &Nerds) {
+		todo!();
+	}
 
 	// Draws the end screen
-	fn draw_end(&mut self) {}
+	fn draw_end(&mut self) {
+		todo!();
+	}
 }
