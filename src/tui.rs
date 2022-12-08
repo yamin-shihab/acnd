@@ -38,6 +38,7 @@ const NERDS: [&Nerd; 4] = [&nerds::JOE, &nerds::ISAAC, &nerds::WILLIAM, &nerds::
 const SELECT_TEXT: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
 const SELECT_COLOR: Color = Color::Magenta;
 const START_TEXT: &str = "Press the enter/return key to start the game or skip the intro";
+const NERD_COLOR: Color = Color::Green;
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
@@ -139,6 +140,7 @@ impl Tui {
 				selection == self.current_selection,
 			)
 		});
+		self.draw_menu_nerd();
 		self.menu_input();
 	}
 
@@ -177,6 +179,17 @@ impl Tui {
 			select_pos.y as i32,
 			select_text,
 			if selected { SELECT_COLOR } else { Color::Reset },
+			Color::Reset,
+		);
+	}
+
+	// Draws the current player selected at the main menu
+	fn draw_menu_nerd(&mut self) {
+		self.engine.print_fbg(
+			(self.width / 2) as i32,
+			(self.height - 12) as i32,
+			NERDS[self.selects[self.current_selection]].sprite,
+			NERD_COLOR,
 			Color::Reset,
 		);
 	}
