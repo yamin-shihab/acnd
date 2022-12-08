@@ -1,7 +1,9 @@
+// Values that change damage done
 const BASE_MULTIPLIER: f64 = 1.0;
 const CRITICAL_CHANCE: u32 = 15;
 const CRITICAL_MULTIPLIER: u32 = 2;
 
+// Balanced nerd
 pub const JOE: Nerd = Nerd::new(
 	"Joe",
 	200,
@@ -22,6 +24,7 @@ pub const JOE: Nerd = Nerd::new(
 /   \\",
 );
 
+// Offensive nerd
 pub const ISAAC: Nerd = Nerd::new(
 	"Isaac",
 	100,
@@ -42,6 +45,7 @@ pub const ISAAC: Nerd = Nerd::new(
  | |",
 );
 
+// Defensive nerd
 pub const WILLIAM: Nerd = Nerd::new(
 	"William",
 	400,
@@ -62,6 +66,7 @@ pub const WILLIAM: Nerd = Nerd::new(
 _//  \\\\_",
 );
 
+// Healer nerd
 pub const SUZIE: Nerd = Nerd::new(
 	"Suzie",
 	200,
@@ -82,6 +87,7 @@ pub const SUZIE: Nerd = Nerd::new(
  /   \\",
 );
 
+// Name and amount of action
 #[derive(Copy, Clone)]
 pub struct ActionStats<T> {
 	name: &'static str,
@@ -89,11 +95,13 @@ pub struct ActionStats<T> {
 }
 
 impl<T> ActionStats<T> {
+	// Creates new stats for action
 	pub const fn new(name: &'static str, value: T) -> Self {
 		Self { name, value }
 	}
 }
 
+// Possible actions that can be done with their stats
 #[derive(Copy, Clone)]
 pub enum Action {
 	Damage(ActionStats<u32>),
@@ -102,6 +110,7 @@ pub enum Action {
 	Strengthen(ActionStats<f64>),
 }
 
+// A character/player with their stats
 #[derive(Copy, Clone)]
 pub struct Nerd {
 	pub name: &'static str,
@@ -113,6 +122,7 @@ pub struct Nerd {
 }
 
 impl Nerd {
+	// Creates a new nerd
 	pub const fn new(
 		name: &'static str,
 		health: i32,

@@ -4,12 +4,15 @@ use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 use std::process;
 
+// Represents a point on the screen
 type Point = Point2D<u32, UnknownUnit>;
 
+// Console engine initialization
 const MIN_WIDTH: u32 = 80;
 const MIN_HEIGHT: u32 = 24;
 const FPS: u32 = 60;
 
+// Controls
 const QUIT_KEY: KeyCode = KeyCode::Char('q');
 const START_KEY: KeyCode = KeyCode::Enter;
 const UP_KEY: KeyCode = KeyCode::Up;
@@ -17,10 +20,12 @@ const DOWN_KEY: KeyCode = KeyCode::Down;
 const LEFT_KEY: KeyCode = KeyCode::Left;
 const RIGHT_KEY: KeyCode = KeyCode::Right;
 
+// Stuff displayed on the intro
 const INTRO_TEXT: [&str; 2] = ["Let AC be Academic Challenge in:", "AC NERD DUELS"];
 const INTRO_COLOR: Color = Color::Red;
 const INTRO_TIME: u32 = 2;
 
+// Stuff shown in the main menu and nerds
 const LOGO_TEXT: &str = "  ___  _____  _   _______
  / _ \\/  __ \\| \\ | |  _  \\
 / /_\\ \\ /  \\/|  \\| | | | |
@@ -33,6 +38,7 @@ const NERDS: [&Nerd; 4] = [&nerds::JOE, &nerds::ISAAC, &nerds::WILLIAM, &nerds::
 const SELECT_TEXT: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
 const SELECT_COLOR: Color = Color::Magenta;
 
+// Manages the terminal, and whats displayed and inputted
 pub struct Tui {
 	engine: ConsoleEngine,
 	width: u32,
@@ -42,6 +48,7 @@ pub struct Tui {
 }
 
 impl Tui {
+	// Creates a new TUI
 	pub fn new() -> Self {
 		let engine =
 			ConsoleEngine::init_fill_require(MIN_WIDTH, MIN_HEIGHT, FPS).unwrap_or_else(|err| {
@@ -59,6 +66,7 @@ impl Tui {
 		}
 	}
 
+	// Updates the TUI
 	pub fn update(&mut self, game_state: GameState, nerds: &Option<[Nerd; 2]>) {
 		self.draw(game_state, nerds);
 		self.engine.draw();
@@ -66,23 +74,28 @@ impl Tui {
 		self.engine.wait_frame();
 	}
 
+	// Returns whether the player wants to quit
 	pub fn quit(&self) -> bool {
 		self.engine.is_key_pressed(QUIT_KEY)
 	}
 
+	// Returns whether the intro is done
 	pub fn intro_done(&self) -> bool {
 		self.engine.frame_count as u32 / FPS >= INTRO_TIME * 2
 			|| self.engine.is_key_pressed(START_KEY)
 	}
 
+	// Returns whether the game has started
 	pub fn game_start(&self) -> bool {
 		self.engine.is_key_pressed(START_KEY)
 	}
 
+	// Returns the nerds selected in the main menu
 	pub fn selected_nerds(&self) -> [Nerd; 2] {
 		[*NERDS[self.selects[0]], *NERDS[self.selects[1]]]
 	}
 
+	// Draws everything related to the current game state
 	fn draw(&mut self, game_state: GameState, nerds: &Option<[Nerd; 2]>) {
 		match game_state {
 			GameState::Intro => self.draw_intro(),
@@ -92,6 +105,7 @@ impl Tui {
 		}
 	}
 
+	// Draws the intro
 	fn draw_intro(&mut self) {
 		let intro_pos: [Point; 2] = [
 			Point::new(
@@ -116,6 +130,7 @@ impl Tui {
 		}
 	}
 
+	// Draws the main menu
 	fn draw_menu(&mut self) {
 		self.draw_logo();
 		let quit_pos = Point::new(
@@ -133,6 +148,7 @@ impl Tui {
 		self.menu_input();
 	}
 
+	// Draws the logo in the main menu
 	fn draw_logo(&mut self) {
 		let logo_pos = Point::new(
 			self.width / 2 - LOGO_TEXT.lines().next().unwrap().len() as u32 / 2,
@@ -147,6 +163,7 @@ impl Tui {
 		);
 	}
 
+	// Draws a selectable option in the main menu
 	fn draw_select(&mut self, select_text: &str, position: u32) {
 		let select_pos = Point::new(
 			self.width / 2 - select_text.len() as u32 / 2,
@@ -165,6 +182,7 @@ impl Tui {
 		);
 	}
 
+	// Manages input in the main menu
 	fn menu_input(&mut self) {
 		if self.engine.is_key_pressed(UP_KEY) {
 			Self::change_selected(&mut self.currently_selected, 1, 1);
@@ -177,6 +195,7 @@ impl Tui {
 		}
 	}
 
+	// Changes the value of the currently selected main menu option
 	fn change_selected(value: &mut usize, max: usize, diff: i32) {
 		if *value == 0 && diff == -1 {
 			*value = max;
@@ -188,7 +207,9 @@ impl Tui {
 		}
 	}
 
+	// Draws the game
 	fn draw_game(&mut self) {}
 
+	// Draws the end screen
 	fn draw_end(&mut self) {}
 }

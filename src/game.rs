@@ -1,6 +1,7 @@
 use crate::nerds::{self, Nerd};
 use crate::tui::Tui;
 
+// Represents the possible states the game can be in
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum GameState {
 	Intro,
@@ -9,6 +10,7 @@ pub enum GameState {
 	GameEnd,
 }
 
+// Contains game information
 pub struct Game {
 	tui: Tui,
 	game_state: GameState,
@@ -17,6 +19,7 @@ pub struct Game {
 }
 
 impl Game {
+	// Creates new instance of the game
 	pub fn new() -> Self {
 		Self {
 			tui: Tui::new(),
@@ -26,6 +29,7 @@ impl Game {
 		}
 	}
 
+	// Runs every frame
 	pub fn main_loop(&mut self) {
 		loop {
 			self.tui.update(self.game_state, &self.nerds);
@@ -36,6 +40,7 @@ impl Game {
 		}
 	}
 
+	// Updates the game
 	fn update(&mut self) {
 		if self.game_state == GameState::Intro && self.tui.intro_done() {
 			self.game_state = GameState::MainMenu;
