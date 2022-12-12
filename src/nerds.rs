@@ -1,10 +1,18 @@
+use console_engine::Color;
+
 // Used to represent the two players
 pub type Nerds = Option<[Nerd; 2]>;
 
+// Array of nerds
+pub const NERDS: [&Nerd; 4] = [&JOE, &ISAAC, &WILLIAM, &SUZIE];
+
+// Color of selected nerd in game and menu
+pub const NERD_COLOR: Color = Color::Green;
+
 // Values that change damage done
-const BASE_MULTIPLIER: f64 = 1.0;
-const CRITICAL_CHANCE: u32 = 15;
-const CRITICAL_MULTIPLIER: u32 = 2;
+pub const BASE_MULTIPLIER: f64 = 1.0;
+pub const CRITICAL_CHANCE: u32 = 15;
+pub const CRITICAL_MULTIPLIER: u32 = 2;
 
 // Balanced nerd
 pub const JOE: Nerd = Nerd::new(
@@ -78,7 +86,7 @@ pub const SUZIE: Nerd = Nerd::new(
 		Action::Damage(ActionStats::new("Insult", 15)),
 		Action::Heal(ActionStats::new("First Aid Kit", 40)),
 		Action::Weaken(ActionStats::new("Threaten to Tell Teacher", 0.10)),
-		Action::Strengthen(ActionStats::new("Watch Dhar Man Video", 0.40)),
+		Action::Strengthen(ActionStats::new("Watch Dhar Mann Video", 0.40)),
 	],
 	" //\"\\\\
 / \\~/ \\
