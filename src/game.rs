@@ -5,21 +5,12 @@ use crate::tui::Tui;
 const GAME_START_MESSAGE: &str = "Two nerds bump into each other. nerd0 and nerd1 glare at each other. The fight chant is heard. The AC Nerd Duels have begun.";
 const GAME_END_MESSAGE: &str = "As the dust settles, nerd0 looks down at the unconcious nerd1 before being escorted to the principal's office.";
 
-// Represents the possible states the game can be in
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum GameState {
-    Intro,
-    MainMenu,
-    InGame,
-    GameEnd,
-}
-
 // Contains game information
 pub struct Game {
     tui: Tui,
     game_state: GameState,
-    nerds: Nerds,
-    current_player: usize,
+    nerds: Option<Nerds>,
+    current_nerd: usize,
 }
 
 impl Game {
@@ -29,14 +20,15 @@ impl Game {
             tui: Tui::new(),
             game_state: GameState::Intro,
             nerds: None,
-            current_player: 0,
+            current_nerd: 0,
         }
     }
 
     // Runs every frame
     pub fn main_loop(&mut self) {
         loop {
-            self.tui.update(self.game_state, &self.nerds);
+            self.tui
+                .update(self.game_state, &self.nerds, self.current_nerd);
             if self.tui.should_quit() {
                 break;
             }
@@ -53,55 +45,75 @@ impl Game {
                 }
             }
             GameState::MainMenu => {
-                if self.tui.game_started() {
-                    self.start_game()
+                if let Some(nerds) = self.tui.nerds_chosen() {
+                    self.start_game(nerds);
                 }
             }
-            GameState::InGame => {
-                if let Some(nerd) = self.game_ended() {
-                    self.end_game(nerd)
-                }
-            }
+            GameState::InGame(InGameState::Choosing) => self.update_choosing(),
+            GameState::InGame(InGameState::Mathing) => self.update_mathing(),
             GameState::GameEnd => (),
         }
     }
 
     // Initializes the start of the game
-    fn start_game(&mut self) {
-        self.game_state = GameState::InGame;
-        self.nerds = self.tui.selected_nerds();
-        let nerds = self.nerds.unwrap();
+    fn start_game(&mut self, nerds: Nerds) {
+        self.game_state = GameState::InGame(InGameState::Choosing);
         self.tui.add_action_message(
             &GAME_START_MESSAGE
                 .replace("nerd0", nerds[0].name)
                 .replace("nerd1", nerds[1].name),
         );
+        self.nerds = Some(nerds);
+    }
+
+    fn update_choosing(&mut self) {
+        if let Some(nerd) = self.game_ended() {
+            self.end_game(nerd)
+        }
+        if let Some(action) = self.tui.action_chosen(&self.nerds, self.current_nerd) {
+            self.game_state = GameState::InGame(InGameState::Mathing);
+        }
     }
 
     // Returns the winning nerd, otherwise none
-    fn game_ended(&self) -> Option<&'static str> {
-        let nerds = self.nerds.unwrap();
-        for nerd in nerds {
-            if nerd.health < 1 {
-                return Some(nerd.name);
+    fn game_ended(&self) -> Option<[&'static str; 2]> {
+        if let Some(nerds) = &self.nerds {
+            if nerds[0].health < 1 {
+                return Some([nerds[1].name, nerds[0].name]);
+            } else if nerds[1].health < 1 {
+                return Some([nerds[0].name, nerds[1].name]);
             }
         }
         None
     }
 
     // Ends the game
-    fn end_game(&mut self, nerd: &str) {
+    fn end_game(&mut self, nerds: [&str; 2]) {
         self.game_state = GameState::GameEnd;
-        let nerds = self.nerds.unwrap();
-        let loser = if nerds[0].name == nerd {
-            &nerds[1].name
-        } else {
-            &nerds[0].name
-        };
         self.tui.add_action_message(
             &GAME_END_MESSAGE
-                .replace("nerd0", nerd)
-                .replace("nerd1", loser),
+                .replace("nerd0", nerds[0])
+                .replace("nerd1", nerds[1]),
         );
     }
+
+    fn update_mathing(&mut self) {
+        todo!();
+    }
+}
+
+// Represents the possible states the game can be in
+#[derive(Copy, Clone)]
+pub enum GameState {
+    Intro,
+    MainMenu,
+    InGame(InGameState),
+    GameEnd,
+}
+
+// Represents what is going on in game
+#[derive(Copy, Clone)]
+pub enum InGameState {
+    Choosing,
+    Mathing,
 }

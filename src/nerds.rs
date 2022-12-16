@@ -1,8 +1,5 @@
 use console_engine::Color;
 
-// Used to represent the two players
-pub type Nerds = Option<[Nerd; 2]>;
-
 // Array of nerds
 pub const NERDS: [&Nerd; 4] = [&JOE, &ISAAC, &WILLIAM, &SUZIE];
 
@@ -13,6 +10,9 @@ pub const NERD_COLOR: Color = Color::Green;
 pub const BASE_MULTIPLIER: f64 = 1.0;
 pub const CRITICAL_CHANCE: u32 = 15;
 pub const CRITICAL_MULTIPLIER: u32 = 2;
+
+// Used to represent the two players
+pub type Nerds = [Nerd; 2];
 
 // Balanced nerd
 pub const JOE: Nerd = Nerd::new(
@@ -119,6 +119,18 @@ pub enum Action {
     Heal(ActionStats<u32>),
     Weaken(ActionStats<f64>),
     Strengthen(ActionStats<f64>),
+}
+
+impl Action {
+    // Returns the name of the action with a suffix
+    pub fn name(&self) -> String {
+        match self {
+            Self::Damage(stats) => String::from(stats.name) + " (D)",
+            Self::Heal(stats) => String::from(stats.name) + " (H)",
+            Self::Weaken(stats) => String::from(stats.name) + " (W)",
+            Self::Strengthen(stats) => String::from(stats.name) + " (S)",
+        }
+    }
 }
 
 // A character/player with their stats

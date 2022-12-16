@@ -1,11 +1,8 @@
-use crate::game::GameState;
-use crate::nerds::{Nerds, NERDS, NERD_COLOR};
+use crate::game::{GameState, InGameState};
+use crate::nerds::{Action, Nerds, NERDS, NERD_COLOR};
 use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 use std::process;
-
-// Represents a point on the screen
-type Point = Point2D<u32, UnknownUnit>;
 
 // Console engine initialization
 const MIN_WIDTH: u32 = 128;
@@ -41,6 +38,11 @@ const START_TEXT: &str = "Press the enter/return key to start the game or skip t
 // Stuff used for displaying stuff related to the game
 const MAX_ACTION_MESSAGES: usize = 5;
 const HORIZONTAL_DIVIDER: &str = "-";
+const ACTION_LIST_WIDTH: u32 = 25;
+const VERTICAL_DIVIDER: &str = "|\n";
+
+// Represents a point on the screen
+type Point = Point2D<u32, UnknownUnit>;
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
@@ -75,8 +77,8 @@ impl Tui {
     }
 
     // Updates the TUI
-    pub fn update(&mut self, game_state: GameState, nerds: &Nerds) {
-        self.draw(game_state, nerds);
+    pub fn update(&mut self, game_state: GameState, nerds: &Option<Nerds>, current_nerd: usize) {
+        self.draw_and_input(game_state, nerds, current_nerd);
         self.engine.draw();
         self.engine.clear_screen();
         self.engine.wait_frame();
@@ -93,14 +95,12 @@ impl Tui {
             || self.engine.is_key_pressed(START_KEY)
     }
 
-    // Returns whether the game has started
-    pub fn game_started(&self) -> bool {
-        self.engine.is_key_pressed(START_KEY)
-    }
-
-    // Returns the nerds selected in the main menu
-    pub fn selected_nerds(&self) -> Nerds {
-        Some([*NERDS[self.nerd_selects[0]], *NERDS[self.nerd_selects[1]]])
+    // Returns the chosen nerds if the game has started
+    pub fn nerds_chosen(&self) -> Option<Nerds> {
+        if self.engine.is_key_pressed(START_KEY) {
+            return Some([*NERDS[self.nerd_selects[0]], *NERDS[self.nerd_selects[1]]]);
+        }
+        None
     }
 
     // Adds a new message to be displayed; cuts off messages that aren't shown
@@ -111,13 +111,34 @@ impl Tui {
         }
     }
 
+    // Returns the chosen action (if one is chosen)
+    pub fn action_chosen(&self, nerds: &Option<Nerds>, current_nerd: usize) -> Option<Action> {
+        if let Some(nerds) = nerds {
+            if self.engine.is_key_pressed(START_KEY) {
+                return Some(nerds[current_nerd].actions[self.current_action_selection]);
+            }
+        }
+        None
+    }
+
     // Draws everything related to the current game state
-    fn draw(&mut self, game_state: GameState, nerds: &Nerds) {
+    fn draw_and_input(
+        &mut self,
+        game_state: GameState,
+        nerds: &Option<Nerds>,
+        current_nerd: usize,
+    ) {
         match game_state {
             GameState::Intro => self.draw_intro(),
-            GameState::MainMenu => self.draw_menu(),
-            GameState::InGame => self.draw_game(nerds),
-            GameState::GameEnd => self.draw_end(),
+            GameState::MainMenu => {
+                self.draw_menu();
+                self.input_menu();
+            }
+            GameState::InGame(state) => {
+                self.draw_game(state, nerds, current_nerd);
+                self.input_game(state);
+            }
+            GameState::GameEnd => self.draw_game(InGameState::Choosing, nerds, current_nerd),
         }
     }
 
@@ -127,6 +148,16 @@ impl Tui {
         if self.engine.frame_count as u32 / FPS >= INTRO_TIME {
             self.draw_message(INTRO_TEXT[1], 0, INTRO_COLOR);
         }
+    }
+
+    // Draws a horizontally centered message
+    fn draw_message(&mut self, text: &str, pos: i32, color: Color) {
+        let pos = Point::new(
+            self.width / 2 - text.len() as u32 / 2,
+            ((self.height / 2) as i32 + pos) as u32,
+        );
+        self.engine
+            .print_fbg(pos.x as i32, pos.y as i32, text, color, Color::Reset);
     }
 
     // Draws the main menu
@@ -141,15 +172,12 @@ impl Tui {
         self.draw_select(&second_text, 1, self.current_nerd_selection == 1);
 
         self.draw_menu_nerd();
-        self.menu_input();
     }
 
     // Draws the logo in the main menu
     fn draw_logo(&mut self) {
-        let logo_pos = Point::new(
-            self.width / 2 - LOGO_TEXT.lines().next().unwrap().len() as u32 / 2,
-            self.height / 2 - 12,
-        );
+        let len = LOGO_TEXT.lines().next().unwrap_or(LOGO_TEXT).len() as u32;
+        let logo_pos = Point::new(self.width / 2 - len / 2, self.height / 2 - 12);
         self.engine.print_fbg(
             logo_pos.x as i32,
             logo_pos.y as i32,
@@ -157,16 +185,6 @@ impl Tui {
             LOGO_COLOR,
             Color::Reset,
         );
-    }
-
-    // Draws a horizontally centered message
-    fn draw_message(&mut self, text: &str, pos: i32, color: Color) {
-        let pos = Point::new(
-            self.width / 2 - text.len() as u32 / 2,
-            ((self.height / 2) as i32 + pos) as u32,
-        );
-        self.engine
-            .print_fbg(pos.x as i32, pos.y as i32, text, color, Color::Reset);
     }
 
     // Draws a selectable option in the main menu
@@ -187,8 +205,9 @@ impl Tui {
     // Draws the current player selected at the main menu
     fn draw_menu_nerd(&mut self) {
         let nerd = NERDS[self.nerd_selects[self.current_nerd_selection]].sprite;
+        let len = nerd.lines().next().unwrap_or(nerd).len() as u32;
         self.engine.print_fbg(
-            (self.width / 2 - nerd.lines().next().unwrap().len() as u32 / 2) as i32,
+            (self.width / 2 - len / 2) as i32,
             (self.height - 12) as i32,
             nerd,
             NERD_COLOR,
@@ -197,7 +216,7 @@ impl Tui {
     }
 
     // Manages input in the main menu
-    fn menu_input(&mut self) {
+    fn input_menu(&mut self) {
         let select = &mut self.nerd_selects[self.current_nerd_selection];
         let selection = &mut self.current_nerd_selection;
         let len = NERDS.len() - 1;
@@ -226,8 +245,21 @@ impl Tui {
     }
 
     // Draws the game
-    fn draw_game(&mut self, nerds: &Nerds) {
-        self.draw_action_messages();
+    fn draw_game(
+        &mut self,
+        in_game_state: InGameState,
+        nerds: &Option<Nerds>,
+        current_nerd: usize,
+    ) {
+        if let Some(nerds) = nerds {
+            match in_game_state {
+                InGameState::Choosing => {
+                    self.draw_action_messages();
+                    self.draw_action_list(nerds, current_nerd);
+                }
+                InGameState::Mathing => todo!(),
+            }
+        }
     }
 
     // Draws a list of messages stating the actions that have been done
@@ -247,8 +279,45 @@ impl Tui {
         }
     }
 
-    // Draws the end screen
-    fn draw_end(&mut self) {
-        todo!();
+    // Draws the list of actions that the current nerd can use
+    fn draw_action_list(&mut self, nerds: &Nerds, current_nerd: usize) {
+        self.engine.print(
+            (self.width - ACTION_LIST_WIDTH) as i32 - 2,
+            0,
+            &VERTICAL_DIVIDER.repeat(self.height as usize - MAX_ACTION_MESSAGES - 1),
+        );
+
+        for (i, action) in nerds[current_nerd].actions.iter().enumerate() {
+            self.draw_action(i as i32, &action.name());
+        }
+    }
+
+    // Draws an action in the action list
+    fn draw_action(&mut self, pos: i32, name: &str) {
+        self.engine.print_fbg(
+            (self.width - ACTION_LIST_WIDTH) as i32,
+            pos + self.height as i32 / 2 - 4,
+            name,
+            if self.current_action_selection == pos as usize {
+                SELECT_COLOR
+            } else {
+                Color::Reset
+            },
+            Color::Reset,
+        );
+    }
+
+    // Processes input for the game
+    fn input_game(&mut self, state: InGameState) {
+        self.action_list_input();
+    }
+
+    // Process input for switching the current action
+    fn action_list_input(&mut self) {
+        if self.engine.is_key_pressed(UP_KEY) {
+            Self::change_selected(&mut self.current_action_selection, 3, -1);
+        } else if self.engine.is_key_pressed(DOWN_KEY) {
+            Self::change_selected(&mut self.current_action_selection, 3, 1);
+        }
     }
 }
