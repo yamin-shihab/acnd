@@ -1,5 +1,5 @@
 use crate::game::{GameState, InGameState};
-use crate::nerds::{Action, Nerds, NERDS, NERD_COLOR};
+use crate::nerds::{Action, Nerds, CURRENT_NERD_COLOR, NERDS, WAITING_NERD_COLOR};
 use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 use std::process;
@@ -18,7 +18,7 @@ const LEFT_KEY: KeyCode = KeyCode::Left;
 const RIGHT_KEY: KeyCode = KeyCode::Right;
 
 // Stuff displayed on the intro
-const INTRO_TEXT: [&str; 2] = ["Let AC be Academic Challenge in:", "AC NERD DUELS"];
+const INTRO_TEXTS: [&str; 2] = ["Let AC be Academic Challenge in:", "AC NERD DUELS"];
 const INTRO_COLOR: Color = Color::Red;
 const INTRO_TIME: u32 = 2;
 
@@ -31,14 +31,14 @@ const LOGO_TEXT: &str = "  ___  _____  _   _______
 \\_| |_/\\____/\\_| \\_/___/";
 const LOGO_COLOR: Color = Color::Blue;
 const QUIT_TEXT: &str = "Press 'q' to quit at any time";
-const SELECT_TEXT: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
+const SELECT_TEXTS: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
 const SELECT_COLOR: Color = Color::Magenta;
 const START_TEXT: &str = "Press the enter/return key to start the game or skip the intro";
 
 // Stuff used for displaying stuff related to the game
 const MAX_ACTION_MESSAGES: usize = 5;
 const HORIZONTAL_DIVIDER: &str = "-";
-const ACTION_LIST_WIDTH: u32 = 25;
+const ACTION_LIST_WIDTH: u32 = 30;
 const VERTICAL_DIVIDER: &str = "|\n";
 
 // Represents a point on the screen
@@ -105,7 +105,7 @@ impl Tui {
 
     // Adds a new message to be displayed; cuts off messages that aren't shown
     pub fn add_action_message(&mut self, text: &str) {
-        self.action_messages.push(String::from(text));
+        self.action_messages.push(text.to_string());
         if self.action_messages.len() > MAX_ACTION_MESSAGES {
             self.action_messages.remove(0);
         }
@@ -144,14 +144,14 @@ impl Tui {
 
     // Draws the intro
     fn draw_intro(&mut self) {
-        self.draw_message(INTRO_TEXT[0], -1, Color::Reset);
+        self.draw_center_message(INTRO_TEXTS[0], -1, Color::Reset);
         if self.engine.frame_count as u32 / FPS >= INTRO_TIME {
-            self.draw_message(INTRO_TEXT[1], 0, INTRO_COLOR);
+            self.draw_center_message(INTRO_TEXTS[1], 0, INTRO_COLOR);
         }
     }
 
     // Draws a horizontally centered message
-    fn draw_message(&mut self, text: &str, pos: i32, color: Color) {
+    fn draw_center_message(&mut self, text: &str, pos: i32, color: Color) {
         let pos = Point::new(
             self.width / 2 - text.len() as u32 / 2,
             ((self.height / 2) as i32 + pos) as u32,
@@ -163,54 +163,46 @@ impl Tui {
     // Draws the main menu
     fn draw_menu(&mut self) {
         self.draw_logo();
-        self.draw_message(QUIT_TEXT, -2, Color::Reset);
-        self.draw_message(START_TEXT, 3, Color::Reset);
+        self.draw_center_message(QUIT_TEXT, -2, Color::Reset);
+        self.draw_center_message(START_TEXT, 3, Color::Reset);
 
-        let first_text = [SELECT_TEXT[0], NERDS[self.nerd_selects[0]].name].concat();
-        self.draw_select(&first_text, 0, self.current_nerd_selection == 0);
-        let second_text = [SELECT_TEXT[1], NERDS[self.nerd_selects[1]].name].concat();
-        self.draw_select(&second_text, 1, self.current_nerd_selection == 1);
+        let selection = self.current_nerd_selection;
+        let selected = |nerd| {
+            if nerd == selection {
+                SELECT_COLOR
+            } else {
+                Color::Reset
+            }
+        };
+        let first_text = [SELECT_TEXTS[0], NERDS[self.nerd_selects[0]].name].concat();
+        self.draw_center_message(&first_text, 0, selected(0));
+        let second_text = [SELECT_TEXTS[1], NERDS[self.nerd_selects[1]].name].concat();
+        self.draw_center_message(&second_text, 1, selected(1));
 
-        self.draw_menu_nerd();
+        self.draw_nerd(NERDS[self.nerd_selects[self.current_nerd_selection]].sprite);
     }
 
     // Draws the logo in the main menu
     fn draw_logo(&mut self) {
-        let len = LOGO_TEXT.lines().next().unwrap_or(LOGO_TEXT).len() as u32;
-        let logo_pos = Point::new(self.width / 2 - len / 2, self.height / 2 - 12);
+        let len = LOGO_TEXT.lines().next().unwrap_or(LOGO_TEXT).len();
+        let pos = Point::new(self.width / 2 - len as u32 / 2, self.height / 2 - 12);
         self.engine.print_fbg(
-            logo_pos.x as i32,
-            logo_pos.y as i32,
+            pos.x as i32,
+            pos.y as i32,
             LOGO_TEXT,
             LOGO_COLOR,
             Color::Reset,
         );
     }
 
-    // Draws a selectable option in the main menu
-    fn draw_select(&mut self, select_text: &str, pos: i32, selected: bool) {
-        let select_pos = Point::new(
-            self.width / 2 - select_text.len() as u32 / 2,
-            ((self.height / 2) as i32 + pos) as u32,
-        );
+    // Draws a nerd
+    fn draw_nerd(&mut self, nerd: &str) {
+        let len = nerd.lines().next().unwrap_or(nerd).len();
         self.engine.print_fbg(
-            select_pos.x as i32,
-            select_pos.y as i32,
-            select_text,
-            if selected { SELECT_COLOR } else { Color::Reset },
-            Color::Reset,
-        );
-    }
-
-    // Draws the current player selected at the main menu
-    fn draw_menu_nerd(&mut self) {
-        let nerd = NERDS[self.nerd_selects[self.current_nerd_selection]].sprite;
-        let len = nerd.lines().next().unwrap_or(nerd).len() as u32;
-        self.engine.print_fbg(
-            (self.width / 2 - len / 2) as i32,
+            (self.width / 2 - len as u32 / 2) as i32,
             (self.height - 12) as i32,
             nerd,
-            NERD_COLOR,
+            CURRENT_NERD_COLOR,
             Color::Reset,
         );
     }
@@ -256,8 +248,12 @@ impl Tui {
                 InGameState::Choosing => {
                     self.draw_action_messages();
                     self.draw_action_list(nerds, current_nerd);
+                    self.draw_stats(nerds);
                 }
-                InGameState::Mathing => todo!(),
+                InGameState::Mathing => {
+                    self.draw_action_messages();
+                    self.draw_stats(nerds);
+                }
             }
         }
     }
@@ -272,7 +268,7 @@ impl Tui {
 
         for (i, message) in self.action_messages.iter().enumerate() {
             self.engine.print(
-                0,
+                1,
                 (self.height - MAX_ACTION_MESSAGES as u32 + i as u32) as i32,
                 message,
             );
@@ -284,7 +280,7 @@ impl Tui {
         self.engine.print(
             (self.width - ACTION_LIST_WIDTH) as i32 - 2,
             0,
-            &VERTICAL_DIVIDER.repeat(self.height as usize - MAX_ACTION_MESSAGES - 1),
+            &VERTICAL_DIVIDER.repeat(self.height as usize - MAX_ACTION_MESSAGES - 3),
         );
 
         for (i, action) in nerds[current_nerd].actions.iter().enumerate() {
@@ -304,6 +300,45 @@ impl Tui {
                 Color::Reset
             },
             Color::Reset,
+        );
+    }
+
+    // Prints the stats of the nerds (health, multiplier)
+    fn draw_stats(&mut self, nerds: &Nerds) {
+        let stats = |nerd: usize| {
+            format!(
+                " {}: Health = {}, Multiplier = {} ",
+                nerds[nerd].name,
+                &nerds[nerd].health.to_string(),
+                &nerds[nerd].multiplier.to_string()
+            )
+        };
+        let color = |nerd: usize| {
+            if nerd == self.current_nerd_selection {
+                CURRENT_NERD_COLOR
+            } else {
+                WAITING_NERD_COLOR
+            }
+        };
+        self.engine.print_fbg(
+            0,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            &stats(0),
+            color(0),
+            Color::Reset,
+        );
+        let stats = stats(1);
+        self.engine.print_fbg(
+            self.width as i32 - stats.len() as i32,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            &stats,
+            color(1),
+            Color::Reset,
+        );
+        self.engine.print(
+            0,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 3,
+            &HORIZONTAL_DIVIDER.repeat(self.width as usize),
         );
     }
 

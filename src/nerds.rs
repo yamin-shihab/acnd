@@ -4,7 +4,8 @@ use console_engine::Color;
 pub const NERDS: [&Nerd; 4] = [&JOE, &ISAAC, &WILLIAM, &SUZIE];
 
 // Color of selected nerd in game and menu
-pub const NERD_COLOR: Color = Color::Green;
+pub const CURRENT_NERD_COLOR: Color = Color::Green;
+pub const WAITING_NERD_COLOR: Color = Color::Red;
 
 // Values that change damage done
 pub const BASE_MULTIPLIER: f64 = 1.0;
@@ -42,7 +43,7 @@ pub const ISAAC: Nerd = Nerd::new(
     5,
     [
         Action::Damage(ActionStats::new("Meter Ruler Katana", 60)),
-        Action::Heal(ActionStats::new("Self Confidence and Motivation", 20)),
+        Action::Heal(ActionStats::new("Self Confidence/Motivation", 20)),
         Action::Weaken(ActionStats::new("Threaten with Scissors", 0.40)),
         Action::Strengthen(ActionStats::new("Steroids", 0.20)),
     ],
@@ -125,10 +126,10 @@ impl Action {
     // Returns the name of the action with a suffix
     pub fn name(&self) -> String {
         match self {
-            Self::Damage(stats) => String::from(stats.name) + " (D)",
-            Self::Heal(stats) => String::from(stats.name) + " (H)",
-            Self::Weaken(stats) => String::from(stats.name) + " (W)",
-            Self::Strengthen(stats) => String::from(stats.name) + " (S)",
+            Self::Damage(stats) => stats.name.to_string() + " (D)",
+            Self::Heal(stats) => stats.name.to_string() + " (H)",
+            Self::Weaken(stats) => stats.name.to_string() + " (W)",
+            Self::Strengthen(stats) => stats.name.to_string() + " (S)",
         }
     }
 }
