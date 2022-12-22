@@ -19,7 +19,6 @@ pub type Nerds = [Nerd; 2];
 pub const JOE: Nerd = Nerd::new(
     "Joe",
     200,
-    10,
     [
         Action::Damage(ActionStats::new("Slap", 30)),
         Action::Heal(ActionStats::new("Band-Aid", 20)),
@@ -40,7 +39,6 @@ pub const JOE: Nerd = Nerd::new(
 pub const ISAAC: Nerd = Nerd::new(
     "Isaac",
     100,
-    5,
     [
         Action::Damage(ActionStats::new("Meter Ruler Katana", 60)),
         Action::Heal(ActionStats::new("Self Confidence/Motivation", 20)),
@@ -61,7 +59,6 @@ pub const ISAAC: Nerd = Nerd::new(
 pub const WILLIAM: Nerd = Nerd::new(
     "William",
     400,
-    20,
     [
         Action::Damage(ActionStats::new("Curse/Swear Words", 30)),
         Action::Heal(ActionStats::new("Meditation", 10)),
@@ -82,7 +79,6 @@ _//  \\\\_",
 pub const SUZIE: Nerd = Nerd::new(
     "Suzie",
     200,
-    10,
     [
         Action::Damage(ActionStats::new("Insult", 15)),
         Action::Heal(ActionStats::new("First Aid Kit", 40)),
@@ -99,17 +95,47 @@ pub const SUZIE: Nerd = Nerd::new(
  /   \\",
 );
 
-// Name and amount of action
+// A character/player with their stats
 #[derive(Copy, Clone)]
-pub struct ActionStats<T> {
+pub struct Nerd {
     pub name: &'static str,
-    pub value: T,
+    pub health: i32,
+    pub multiplier: f64,
+    pub actions: [Action; 4],
+    pub sprite: &'static str,
 }
 
-impl<T> ActionStats<T> {
-    // Creates new stats for action
-    pub const fn new(name: &'static str, value: T) -> Self {
-        Self { name, value }
+impl Nerd {
+    // Creates a new nerd
+    pub const fn new(
+        name: &'static str,
+        health: i32,
+        actions: [Action; 4],
+        sprite: &'static str,
+    ) -> Self {
+        Self {
+            name,
+            health,
+            multiplier: BASE_MULTIPLIER,
+            actions,
+            sprite,
+        }
+    }
+
+    // Uses the given action index
+    pub fn use_action(&mut self, action: usize, nerd: &mut Nerd) -> String {
+        match self.actions[action] {
+            Action::Damage(stats) => nerd.health -= (stats.value as f64 * self.multiplier) as i32,
+            Action::Heal(stats) => self.health += (stats.value as f64 * self.multiplier) as i32,
+            Action::Weaken(stats) => nerd.multiplier -= nerd.multiplier * stats.value,
+            Action::Strengthen(stats) => self.multiplier += self.multiplier * stats.value,
+        }
+        format!(
+            "{} used {} against {}",
+            self.name,
+            self.actions[action].name(),
+            nerd.name
+        )
     }
 }
 
@@ -134,33 +160,16 @@ impl Action {
     }
 }
 
-// A character/player with their stats
+// Name and amount of action
 #[derive(Copy, Clone)]
-pub struct Nerd {
+pub struct ActionStats<T> {
     pub name: &'static str,
-    pub health: i32,
-    pub defense: i32,
-    pub multiplier: f64,
-    pub actions: [Action; 4],
-    pub sprite: &'static str,
+    pub value: T,
 }
 
-impl Nerd {
-    // Creates a new nerd
-    pub const fn new(
-        name: &'static str,
-        health: i32,
-        defense: i32,
-        actions: [Action; 4],
-        sprite: &'static str,
-    ) -> Self {
-        Self {
-            name,
-            health,
-            defense,
-            multiplier: BASE_MULTIPLIER,
-            actions,
-            sprite,
-        }
+impl<T> ActionStats<T> {
+    // Creates new stats for action
+    pub const fn new(name: &'static str, value: T) -> Self {
+        Self { name, value }
     }
 }

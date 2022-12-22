@@ -1,5 +1,5 @@
 use crate::game::{GameState, InGameState};
-use crate::nerds::{Action, Nerd, Nerds, CURRENT_NERD_COLOR, NERDS, WAITING_NERD_COLOR};
+use crate::nerds::{Nerd, Nerds, CURRENT_NERD_COLOR, NERDS, WAITING_NERD_COLOR};
 use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 
@@ -111,11 +111,9 @@ impl Tui {
     }
 
     // Returns the chosen action (if one is chosen)
-    pub fn action_chosen(&self, nerds: &Option<Nerds>, current_nerd: usize) -> Option<Action> {
-        if let Some(nerds) = nerds {
-            if self.engine.is_key_pressed(START_KEY) {
-                return Some(nerds[current_nerd].actions[self.current_action_selection]);
-            }
+    pub fn action_chosen(&self) -> Option<usize> {
+        if self.engine.is_key_pressed(START_KEY) {
+            return Some(self.current_action_selection);
         }
         None
     }
@@ -130,7 +128,7 @@ impl Tui {
         match game_state {
             GameState::Intro => self.draw_intro(),
             GameState::MainMenu => {
-                self.draw_menu();
+                self.draw_menu(current_nerd);
                 self.input_menu();
             }
             GameState::InGame(state) => {
@@ -160,26 +158,34 @@ impl Tui {
     }
 
     // Draws the main menu
-    fn draw_menu(&mut self) {
+    fn draw_menu(&mut self, current_nerd: usize) {
         self.draw_logo();
 
-        for i in [(QUIT_TEXT, -2), (START_TEXT, 3)] {
-            self.draw_centered_message(i.0, i.1, Color::Reset);
-        }
+        self.draw_centered_message(QUIT_TEXT, -4, Color::Reset);
+        self.draw_centered_message(START_TEXT, 1, Color::Reset);
 
-        for i in 0..=1 {
-            let text = SELECT_TEXTS[i].to_string() + NERDS[self.nerd_selects[i]].name;
-            self.draw_centered_message(
-                &text,
-                i as i32,
-                Self::selection_color(self.current_nerd_selection == i),
-            );
-        }
+        let first_text = SELECT_TEXTS[0].to_string() + NERDS[self.nerd_selects[0]].name;
+        self.draw_centered_message(
+            &first_text,
+            -2,
+            Self::selection_color(self.current_nerd_selection == 0),
+        );
+        let second_text = SELECT_TEXTS[1].to_string() + NERDS[self.nerd_selects[1]].name;
+        self.draw_centered_message(
+            &second_text,
+            -1,
+            Self::selection_color(self.current_nerd_selection == 1),
+        );
 
         self.draw_nerd(
-            NERDS[self.nerd_selects[self.current_nerd_selection]],
-            0,
-            true,
+            NERDS[self.nerd_selects[0]],
+            -20,
+            current_nerd == 0,
+        );
+        self.draw_nerd(
+            NERDS[self.nerd_selects[1]],
+            20,
+            current_nerd == 1,
         );
     }
 
@@ -207,10 +213,11 @@ impl Tui {
 
     // Draws a nerd at position with suitable color
     fn draw_nerd(&mut self, nerd: &Nerd, pos: i32, current_nerd: bool) {
-        let len = nerd.sprite.lines().next().unwrap_or(nerd.sprite).len();
+        let mut lines = nerd.sprite.lines();
+        let len = lines.next().unwrap_or(nerd.sprite).len();
         self.engine.print_fbg(
             (self.width / 2 - len as u32 / 2) as i32 + pos,
-            (self.height - 12) as i32,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - lines.count() as i32 - 4,
             nerd.sprite,
             Self::nerd_color(current_nerd),
             Color::Reset,
@@ -257,12 +264,14 @@ impl Tui {
             match in_game_state {
                 InGameState::Choosing => {
                     self.draw_action_messages();
-                    self.draw_action_list(nerds, current_nerd);
                     self.draw_stats(nerds, current_nerd);
+                    self.draw_nerds(nerds, current_nerd);
+                    self.draw_action_list(nerds, current_nerd);
                 }
                 InGameState::Mathing => {
                     self.draw_action_messages();
                     self.draw_stats(nerds, current_nerd);
+                    self.draw_nerds(nerds, current_nerd);
                 }
             }
         }
@@ -283,6 +292,55 @@ impl Tui {
                 message,
             );
         }
+    }
+
+    // Prints the stats of the nerds (health, multiplier)
+    fn draw_stats(&mut self, nerds: &Nerds, current_nerd: usize) {
+        self.engine.print_fbg(
+            0,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            &self.stats_string(&nerds[0]),
+            Self::nerd_color(0 == current_nerd),
+            Color::Reset,
+        );
+        let stats = self.stats_string(&nerds[1]);
+        self.engine.print_fbg(
+            self.width as i32 - stats.len() as i32,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            &stats,
+            Self::nerd_color(1 == current_nerd),
+            Color::Reset,
+        );
+        self.engine.print(
+            0,
+            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 3,
+            &HORIZONTAL_DIVIDER.repeat(self.width as usize),
+        );
+    }
+
+    // Returns the string used for printing the nerd's stats
+    fn stats_string(&self, nerd: &Nerd) -> String {
+        format!(
+            " {}: Health = {}, Multiplier = {} ",
+            nerd.name,
+            nerd.health.to_string(),
+            nerd.multiplier.to_string()
+        )
+    }
+
+    // Returns the appropriate color of the nerd (if they are the current nerds)
+    fn nerd_color(current_nerd: bool) -> Color {
+        if current_nerd {
+            CURRENT_NERD_COLOR
+        } else {
+            WAITING_NERD_COLOR
+        }
+    }
+
+    // Draws the nerds of the game with suitable colors
+    fn draw_nerds(&mut self, nerds: &Nerds, current_nerd: usize) {
+        self.draw_nerd(&nerds[0], -50, current_nerd == 0);
+        self.draw_nerd(&nerds[1], 10, current_nerd == 1);
     }
 
     // Draws the list of actions that the current nerd can use
@@ -307,49 +365,6 @@ impl Tui {
             Self::selection_color(self.current_action_selection == pos),
             Color::Reset,
         );
-    }
-
-    // Prints the stats of the nerds (health, multiplier)
-    fn draw_stats(&mut self, nerds: &Nerds, current_nerd: usize) {
-        self.engine.print_fbg(
-            0,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
-            &self.stats_string(nerds, 0),
-            Self::nerd_color(0 == current_nerd),
-            Color::Reset,
-        );
-        let stats = self.stats_string(nerds, 1);
-        self.engine.print_fbg(
-            self.width as i32 - stats.len() as i32,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
-            &stats,
-            Self::nerd_color(1 == current_nerd),
-            Color::Reset,
-        );
-        self.engine.print(
-            0,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 3,
-            &HORIZONTAL_DIVIDER.repeat(self.width as usize),
-        );
-    }
-
-    // Returns the string used for printing the nerd's stats
-    fn stats_string(&self, nerds: &Nerds, nerd: usize) -> String {
-        format!(
-            " {}: Health = {}, Multiplier = {} ",
-            nerds[nerd].name,
-            &nerds[nerd].health.to_string(),
-            &nerds[nerd].multiplier.to_string()
-        )
-    }
-
-    // Returns the appropriate color of the nerd (if they are the current nerds)
-    fn nerd_color(current_nerd: bool) -> Color {
-        if current_nerd {
-            CURRENT_NERD_COLOR
-        } else {
-            WAITING_NERD_COLOR
-        }
     }
 
     // Processes input for the game

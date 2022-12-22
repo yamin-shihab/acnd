@@ -66,12 +66,21 @@ impl Game {
         self.nerds = Some(nerds);
     }
 
+    // Updates the game when choosing action
     fn update_choosing(&mut self) {
         if let Some(nerd) = self.game_ended() {
             self.end_game(nerd)
         }
-        if let Some(action) = self.tui.action_chosen(&self.nerds, self.current_nerd) {
-            self.game_state = GameState::InGame(InGameState::Mathing);
+        if let Some(action) = self.tui.action_chosen() {
+            if let Some(nerds) = &mut self.nerds {
+                let (first, second) = nerds.split_at_mut(1);
+                self.tui.add_action_message(&if self.current_nerd == 0 {
+                    first[0].use_action(action, &mut second[0])
+                } else {
+                    second[0].use_action(action, &mut first[0])
+                });
+                self.game_state = GameState::InGame(InGameState::Mathing);
+            }
         }
     }
 
@@ -97,8 +106,10 @@ impl Game {
         );
     }
 
+    // Updates the game when entering math answer
     fn update_mathing(&mut self) {
-        todo!();
+        self.game_state = GameState::InGame(InGameState::Choosing);
+        self.current_nerd = usize::from(self.current_nerd == 0);
     }
 }
 
