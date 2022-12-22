@@ -9,8 +9,8 @@ pub const WAITING_NERD_COLOR: Color = Color::Red;
 
 // Values that change damage done
 pub const BASE_MULTIPLIER: f64 = 1.0;
-pub const CRITICAL_CHANCE: u32 = 15;
-pub const CRITICAL_MULTIPLIER: u32 = 2;
+pub const CRITICAL_CHANCE: u32 = 20;
+pub const CRITICAL_MULTIPLIER: f64 = 2.0;
 
 // Used to represent the two players
 pub type Nerds = [Nerd; 2];
@@ -124,17 +124,43 @@ impl Nerd {
 
     // Uses the given action index
     pub fn use_action(&mut self, action: usize, nerd: &mut Nerd) -> String {
+        let critical = Self::critical();
         match self.actions[action] {
-            Action::Damage(stats) => nerd.health -= (stats.value as f64 * self.multiplier) as i32,
-            Action::Heal(stats) => self.health += (stats.value as f64 * self.multiplier) as i32,
-            Action::Weaken(stats) => nerd.multiplier -= nerd.multiplier * stats.value,
-            Action::Strengthen(stats) => self.multiplier += self.multiplier * stats.value,
+            Action::Damage(stats) => {
+                nerd.health -= (stats.value as f64 * self.multiplier * critical) as i32
+            }
+            Action::Heal(stats) => {
+                self.health += (stats.value as f64 * self.multiplier * critical) as i32
+            }
+            Action::Weaken(stats) => nerd.multiplier -= nerd.multiplier * stats.value * critical,
+            Action::Strengthen(stats) => {
+                self.multiplier += self.multiplier * stats.value * critical
+            }
         }
+        self.action_message(action, nerd, critical)
+    }
+
+    // Returns a critical hit multiplier
+    fn critical() -> f64 {
+        let rand = fastrand::u32(0..100);
+        if rand < CRITICAL_CHANCE {
+            return CRITICAL_MULTIPLIER;
+        }
+        1.0
+    }
+
+    // Returns a message to be displayed as a result of an action
+    fn action_message(&self, action: usize, nerd: &Nerd, critical: f64) -> String {
         format!(
-            "{} used {} against {}",
+            "{} used {} against {}{}",
             self.name,
             self.actions[action].name(),
-            nerd.name
+            nerd.name,
+            if critical == CRITICAL_MULTIPLIER {
+                " (CRITICAL!!!)"
+            } else {
+                ""
+            }
         )
     }
 }

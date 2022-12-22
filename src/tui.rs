@@ -177,16 +177,8 @@ impl Tui {
             Self::selection_color(self.current_nerd_selection == 1),
         );
 
-        self.draw_nerd(
-            NERDS[self.nerd_selects[0]],
-            -20,
-            current_nerd == 0,
-        );
-        self.draw_nerd(
-            NERDS[self.nerd_selects[1]],
-            20,
-            current_nerd == 1,
-        );
+        self.draw_nerd(NERDS[self.nerd_selects[0]], -20, current_nerd == 0);
+        self.draw_nerd(NERDS[self.nerd_selects[1]], 20, current_nerd == 1);
     }
 
     // Draws the logo in the main menu
@@ -322,9 +314,7 @@ impl Tui {
     fn stats_string(&self, nerd: &Nerd) -> String {
         format!(
             " {}: Health = {}, Multiplier = {} ",
-            nerd.name,
-            nerd.health.to_string(),
-            nerd.multiplier.to_string()
+            nerd.name, nerd.health, nerd.multiplier,
         )
     }
 
