@@ -122,22 +122,70 @@ impl Nerd {
         }
     }
 
-    // Uses the given action index
-    pub fn use_action(&mut self, action: usize, nerd: &mut Nerd) -> String {
+    // Returns the equation to be answered, the answer to it, and whether it was a crtiical
+    pub fn equation(&self, action: usize, nerd: &Nerd) -> (String, f64, bool) {
         let critical = Self::critical();
         match self.actions[action] {
-            Action::Damage(stats) => {
-                nerd.health -= (stats.value as f64 * self.multiplier * critical) as i32
-            }
-            Action::Heal(stats) => {
-                self.health += (stats.value as f64 * self.multiplier * critical) as i32
-            }
-            Action::Weaken(stats) => nerd.multiplier -= nerd.multiplier * stats.value * critical,
-            Action::Strengthen(stats) => {
-                self.multiplier += self.multiplier * stats.value * critical
-            }
+            Action::Damage(stats) => (
+                format!(
+                    "{} - ({} * {} * {})",
+                    nerd.health, stats.value, self.multiplier, critical
+                ),
+                ((nerd.health as f64 - (stats.value as f64 * self.multiplier * critical)) * 100.0)
+                    .trunc()
+                    / 100.0,
+                critical == CRITICAL_MULTIPLIER,
+            ),
+            Action::Heal(stats) => (
+                format!(
+                    "{} + ({} * {} * {})",
+                    self.health, stats.value, self.multiplier, critical
+                ),
+                ((self.health as f64 + (stats.value as f64 * self.multiplier * critical)) * 100.0)
+                    .trunc()
+                    / 100.0,
+                critical == CRITICAL_MULTIPLIER,
+            ),
+            Action::Weaken(stats) => (
+                format!(
+                    "{} - ({} * {} * {} * {})",
+                    nerd.multiplier, nerd.multiplier, stats.value, self.multiplier, critical
+                ),
+                ((nerd.multiplier - (nerd.multiplier * stats.value * self.multiplier * critical))
+                    * 100.0)
+                    .trunc()
+                    / 100.0,
+                critical == CRITICAL_MULTIPLIER,
+            ),
+            Action::Strengthen(stats) => (
+                format!(
+                    "{} + ({} * {} * {} * {})",
+                    self.multiplier, self.multiplier, stats.value, self.multiplier, critical
+                ),
+                ((self.multiplier + (self.multiplier * stats.value * self.multiplier * critical))
+                    * 100.0)
+                    .trunc()
+                    / 100.0,
+                critical == CRITICAL_MULTIPLIER,
+            ),
         }
-        self.action_message(action, nerd, critical)
+    }
+
+    // Uses the given action index
+    pub fn use_action(
+        &mut self,
+        action: usize,
+        value: f64,
+        critical: bool,
+        nerd: &mut Nerd,
+    ) -> String {
+        match self.actions[action] {
+            Action::Damage(_) => nerd.health = value as i32,
+            Action::Heal(_) => self.health = value as i32,
+            Action::Weaken(_) => nerd.multiplier = value,
+            Action::Strengthen(_) => self.multiplier = value,
+        }
+        self.action_message(action, critical, nerd)
     }
 
     // Returns a critical hit multiplier
@@ -150,17 +198,13 @@ impl Nerd {
     }
 
     // Returns a message to be displayed as a result of an action
-    fn action_message(&self, action: usize, nerd: &Nerd, critical: f64) -> String {
+    fn action_message(&self, action: usize, critical: bool, nerd: &Nerd) -> String {
         format!(
             "{} used {} against {}{}",
             self.name,
             self.actions[action].name(),
             nerd.name,
-            if critical == CRITICAL_MULTIPLIER {
-                " (CRITICAL!!!)"
-            } else {
-                ""
-            }
+            if critical { " (CRITICAL!!!)" } else { "" }
         )
     }
 }

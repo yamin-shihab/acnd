@@ -8,9 +8,6 @@ const MIN_WIDTH: u32 = 128;
 const MIN_HEIGHT: u32 = 32;
 const FPS: u32 = 60;
 
-// Error message to print when Console Engine fails to start
-const ENGINE_FAIL_ERR_MSG: &str = "Console Engine failed to start";
-
 // Controls
 const QUIT_KEY: KeyCode = KeyCode::Char('q');
 const START_KEY: KeyCode = KeyCode::Enter;
@@ -20,7 +17,7 @@ const LEFT_KEY: KeyCode = KeyCode::Left;
 const RIGHT_KEY: KeyCode = KeyCode::Right;
 
 // Stuff displayed on the intro
-const INTRO_TEXTS: [&str; 2] = ["Let AC be Academic Challenge in:", "AC NERD DUELS"];
+const INTRO_TEXTS: [&str; 2] = ["Let AC be Academically Challenged in:", "AC NERD DUELS"];
 const INTRO_COLOR: Color = Color::Red;
 const INTRO_TIME: u32 = 2;
 
@@ -32,7 +29,7 @@ const LOGO_TEXT: &str = "  ___  _____  _   _______
 | | | | \\__/\\| |\\  | |/ /
 \\_| |_/\\____/\\_| \\_/___/";
 const LOGO_COLOR: Color = Color::Blue;
-const QUIT_TEXT: &str = "Press 'q' to quit at any time";
+const QUIT_TEXT: &str = "Use the arrow keys to select something, and 'q' to quit at any time";
 const SELECT_TEXTS: [&str; 2] = ["Nerd 1: ", "Nerd 2: "];
 const SELECT_COLOR: Color = Color::Magenta;
 const START_TEXT: &str = "Press the enter/return key to start the game or skip the intro";
@@ -43,18 +40,22 @@ const HORIZONTAL_DIVIDER: &str = "-";
 const ACTION_LIST_WIDTH: u32 = 30;
 const VERTICAL_DIVIDER: &str = "|\n";
 
+// Error message
+const ENGINE_FAIL_ERR_MSG: &str = "Console Engine failed to start";
+
 // Represents a point on the screen
 type Point = Point2D<u32, UnknownUnit>;
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
-    engine: ConsoleEngine,
+    pub engine: ConsoleEngine,
     width: u32,
     height: u32,
     current_nerd_selection: usize,
     nerd_selects: [usize; 2],
     action_messages: Vec<String>,
     current_action_selection: usize,
+    inputted_number: String,
 }
 
 impl Tui {
@@ -72,12 +73,19 @@ impl Tui {
             nerd_selects: [0, 0],
             action_messages: Vec::new(),
             current_action_selection: 0,
+            inputted_number: String::new(),
         }
     }
 
     // Updates the TUI
-    pub fn update(&mut self, game_state: GameState, nerds: &Option<Nerds>, current_nerd: usize) {
-        self.draw_and_input(game_state, nerds, current_nerd);
+    pub fn update(
+        &mut self,
+        game_state: GameState,
+        nerds: &Option<Nerds>,
+        current_nerd: usize,
+        equation: &str,
+    ) {
+        self.draw_and_input(game_state, nerds, current_nerd, equation);
         self.engine.draw();
         self.engine.clear_screen();
         self.engine.wait_frame();
@@ -118,12 +126,25 @@ impl Tui {
         None
     }
 
+    // Returns the inputted math number if it was entered
+    pub fn number_chosen(&mut self) -> Option<f64> {
+        if self.engine.is_key_pressed(START_KEY) {
+            let num = self.inputted_number.parse();
+            if let Ok(num) = num {
+                self.inputted_number = String::new();
+                return Some(num);
+            }
+        }
+        None
+    }
+
     // Draws everything related to the current game state
     fn draw_and_input(
         &mut self,
         game_state: GameState,
         nerds: &Option<Nerds>,
         current_nerd: usize,
+        equation: &str,
     ) {
         match game_state {
             GameState::Intro => self.draw_intro(),
@@ -132,10 +153,12 @@ impl Tui {
                 self.input_menu();
             }
             GameState::InGame(state) => {
-                self.draw_game(state, nerds, current_nerd);
+                self.draw_game(state, nerds, current_nerd, equation);
                 self.input_game(state);
             }
-            GameState::GameEnd => self.draw_game(InGameState::Choosing, nerds, current_nerd),
+            GameState::GameEnd => {
+                self.draw_game(InGameState::Choosing, nerds, current_nerd, equation)
+            }
         }
     }
 
@@ -251,8 +274,9 @@ impl Tui {
         in_game_state: InGameState,
         nerds: &Option<Nerds>,
         current_nerd: usize,
+        equation: &str,
     ) {
-        if let Some(nerds) = nerds {
+        if let Some(nerds) = &nerds {
             match in_game_state {
                 InGameState::Choosing => {
                     self.draw_action_messages();
@@ -264,6 +288,7 @@ impl Tui {
                     self.draw_action_messages();
                     self.draw_stats(nerds, current_nerd);
                     self.draw_nerds(nerds, current_nerd);
+                    self.draw_number(equation);
                 }
             }
         }
@@ -357,9 +382,20 @@ impl Tui {
         );
     }
 
+    // Draws the number input bar
+    fn draw_number(&mut self, equation: &str) {
+        self.engine
+            .print(0, 0, &format!("{}: {}", equation, self.inputted_number));
+        self.engine
+            .print(0, 1, &HORIZONTAL_DIVIDER.repeat(self.width as usize));
+    }
+
     // Processes input for the game
     fn input_game(&mut self, state: InGameState) {
-        self.action_list_input();
+        match state {
+            InGameState::Choosing => self.action_list_input(),
+            InGameState::Mathing => self.math_input(),
+        }
     }
 
     // Process input for switching the current action
@@ -368,6 +404,21 @@ impl Tui {
             Self::change_selected(&mut self.current_action_selection, 3, -1);
         } else if self.engine.is_key_pressed(DOWN_KEY) {
             Self::change_selected(&mut self.current_action_selection, 3, 1);
+        }
+    }
+
+    // Processes input for solving math equations
+    fn math_input(&mut self) {
+        for num in '0'..='9' {
+            if self.engine.is_key_pressed(KeyCode::Char(num)) {
+                self.inputted_number.push(num);
+            }
+        }
+        if self.engine.is_key_pressed(KeyCode::Char('.')) {
+            self.inputted_number.push('.')
+        }
+        if self.engine.is_key_pressed(KeyCode::Backspace) {
+            self.inputted_number.pop();
         }
     }
 }

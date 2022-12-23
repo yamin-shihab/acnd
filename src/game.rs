@@ -11,6 +11,10 @@ pub struct Game {
     game_state: GameState,
     nerds: Option<Nerds>,
     current_nerd: usize,
+    action_selected: usize,
+    equation: String,
+    answer: f64,
+    critical: Option<bool>,
 }
 
 impl Game {
@@ -21,14 +25,22 @@ impl Game {
             game_state: GameState::Intro,
             nerds: None,
             current_nerd: 0,
+            action_selected: 0,
+            equation: String::new(),
+            answer: 0.0,
+            critical: None,
         }
     }
 
     // Runs every frame
     pub fn main_loop(&mut self) {
         loop {
-            self.tui
-                .update(self.game_state, &self.nerds, self.current_nerd);
+            self.tui.update(
+                self.game_state,
+                &self.nerds,
+                self.current_nerd,
+                &self.equation,
+            );
             if self.tui.should_quit() {
                 break;
             }
@@ -68,19 +80,12 @@ impl Game {
 
     // Updates the game when choosing action
     fn update_choosing(&mut self) {
-        if let Some(nerd) = self.game_ended() {
-            self.end_game(nerd)
+        if let Some(nerd_names) = self.game_ended() {
+            self.end_game(nerd_names)
         }
         if let Some(action) = self.tui.action_chosen() {
-            if let Some(nerds) = &mut self.nerds {
-                let (first, second) = nerds.split_at_mut(1);
-                self.tui.add_action_message(&if self.current_nerd == 0 {
-                    first[0].use_action(action, &mut second[0])
-                } else {
-                    second[0].use_action(action, &mut first[0])
-                });
-                self.game_state = GameState::InGame(InGameState::Mathing);
-            }
+            self.action_selected = action;
+            self.game_state = GameState::InGame(InGameState::Mathing);
         }
     }
 
@@ -97,19 +102,52 @@ impl Game {
     }
 
     // Ends the game
-    fn end_game(&mut self, nerds: [&str; 2]) {
+    fn end_game(&mut self, nerd_names: [&str; 2]) {
         self.game_state = GameState::GameEnd;
         self.tui.add_action_message(
             &GAME_END_MESSAGE
-                .replace("nerd0", nerds[0])
-                .replace("nerd1", nerds[1]),
+                .replace("nerd0", nerd_names[0])
+                .replace("nerd1", nerd_names[1]),
         );
     }
 
     // Updates the game when entering math answer
     fn update_mathing(&mut self) {
-        self.game_state = GameState::InGame(InGameState::Choosing);
-        self.current_nerd = usize::from(self.current_nerd == 0);
+        if let Some(nerds) = &mut self.nerds {
+            let other = usize::from(self.current_nerd == 0);
+            let (equation, answer, critical) =
+                nerds[self.current_nerd].equation(self.action_selected, &nerds[other]);
+            if self.critical.is_none() {
+                self.equation = equation;
+                self.answer = answer;
+                self.critical = Some(critical);
+            }
+            if let Some(num) = self.tui.number_chosen() {
+                if num == self.answer {
+                    if let Some(critical) = self.critical {
+                        let (first, second) = nerds.split_at_mut(1);
+                        self.tui.add_action_message(&if self.current_nerd == 0 {
+                            first[0].use_action(
+                                self.action_selected,
+                                self.answer,
+                                critical,
+                                &mut second[0],
+                            )
+                        } else {
+                            second[0].use_action(
+                                self.action_selected,
+                                self.answer,
+                                critical,
+                                &mut first[0],
+                            )
+                        });
+                    }
+                }
+                self.game_state = GameState::InGame(InGameState::Choosing);
+                self.current_nerd = other;
+                self.critical = None;
+            }
+        }
     }
 }
 
