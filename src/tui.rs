@@ -4,12 +4,13 @@ use console_engine::{Color, ConsoleEngine, KeyCode};
 use euclid::{Point2D, UnknownUnit};
 
 // Console engine initialization
-const MIN_WIDTH: u32 = 128;
-const MIN_HEIGHT: u32 = 32;
-const FPS: u32 = 60;
+const MIN_WIDTH: usize = 130;
+const MIN_HEIGHT: usize = 30;
+const FPS: i32 = 60;
 
 // Controls
 const QUIT_KEY: KeyCode = KeyCode::Char('q');
+const BACK_KEY: KeyCode = KeyCode::Esc;
 const START_KEY: KeyCode = KeyCode::Enter;
 const UP_KEY: KeyCode = KeyCode::Up;
 const DOWN_KEY: KeyCode = KeyCode::Down;
@@ -19,7 +20,7 @@ const RIGHT_KEY: KeyCode = KeyCode::Right;
 // Stuff displayed on the intro
 const INTRO_TEXTS: [&str; 2] = ["Let AC be Academically Challenged in:", "AC NERD DUELS"];
 const INTRO_COLOR: Color = Color::Red;
-const INTRO_TIME: u32 = 2;
+const INTRO_TIME: i32 = 2;
 
 // Stuff shown in the main menu
 const LOGO_TEXT: &str = "  ___  _____  _   _______
@@ -37,34 +38,35 @@ const START_TEXT: &str = "Press the enter/return key to start the game or skip t
 // Stuff used for displaying stuff related to the game
 const MAX_ACTION_MESSAGES: usize = 5;
 const HORIZONTAL_DIVIDER: &str = "-";
-const ACTION_LIST_WIDTH: u32 = 30;
+const ACTION_LIST_WIDTH: usize = 35;
 const VERTICAL_DIVIDER: &str = "|\n";
 
 // Error message
 const ENGINE_FAIL_ERR_MSG: &str = "Console Engine failed to start";
 
 // Represents a point on the screen
-type Point = Point2D<u32, UnknownUnit>;
+type Point = Point2D<i32, UnknownUnit>;
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
     pub engine: ConsoleEngine,
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     current_nerd_selection: usize,
     nerd_selects: [usize; 2],
     action_messages: Vec<String>,
     current_action_selection: usize,
-    inputted_number: String,
+    inputted_math: String,
 }
 
 impl Tui {
     // Creates a new TUI
     pub fn new() -> Self {
-        let engine = ConsoleEngine::init_fill_require(MIN_WIDTH, MIN_HEIGHT, FPS)
-            .expect(ENGINE_FAIL_ERR_MSG);
-        let width = engine.get_width();
-        let height = engine.get_height();
+        let engine =
+            ConsoleEngine::init_fill_require(MIN_WIDTH as u32, MIN_HEIGHT as u32, FPS as u32)
+                .expect(ENGINE_FAIL_ERR_MSG);
+        let width = engine.get_width() as i32;
+        let height = engine.get_height() as i32;
         Self {
             engine,
             width,
@@ -73,7 +75,7 @@ impl Tui {
             nerd_selects: [0, 0],
             action_messages: Vec::new(),
             current_action_selection: 0,
-            inputted_number: String::new(),
+            inputted_math: String::new(),
         }
     }
 
@@ -98,7 +100,7 @@ impl Tui {
 
     // Returns whether the intro is done
     pub fn intro_done(&self) -> bool {
-        self.engine.frame_count as u32 / FPS >= INTRO_TIME * 2
+        self.engine.frame_count as i32 / FPS >= INTRO_TIME * 2
             || self.engine.is_key_pressed(START_KEY)
     }
 
@@ -126,12 +128,21 @@ impl Tui {
         None
     }
 
+    // Returns whether the player wants to go back to action selection
+    pub fn back(&mut self) -> bool {
+        if self.engine.is_key_pressed(BACK_KEY) {
+            self.inputted_math = String::new();
+            return true;
+        }
+        false
+    }
+
     // Returns the inputted math number if it was entered
-    pub fn number_chosen(&mut self) -> Option<f64> {
+    pub fn math_chosen(&mut self) -> Option<i32> {
         if self.engine.is_key_pressed(START_KEY) {
-            let num = self.inputted_number.parse();
+            let num = self.inputted_math.parse();
             if let Ok(num) = num {
-                self.inputted_number = String::new();
+                self.inputted_math = String::new();
                 return Some(num);
             }
         }
@@ -165,7 +176,7 @@ impl Tui {
     // Draws the intro
     fn draw_intro(&mut self) {
         self.draw_centered_message(INTRO_TEXTS[0], -1, Color::Reset);
-        if self.engine.frame_count as u32 / FPS >= INTRO_TIME {
+        if self.engine.frame_count as i32 / FPS >= INTRO_TIME {
             self.draw_centered_message(INTRO_TEXTS[1], 0, INTRO_COLOR);
         }
     }
@@ -173,11 +184,11 @@ impl Tui {
     // Draws a horizontally centered message
     fn draw_centered_message(&mut self, text: &str, pos: i32, color: Color) {
         let pos = Point::new(
-            self.width / 2 - text.len() as u32 / 2,
-            ((self.height / 2) as i32 + pos) as u32,
+            self.width / 2 - text.len() as i32 / 2,
+            (self.height / 2) + pos,
         );
         self.engine
-            .print_fbg(pos.x as i32, pos.y as i32, text, color, Color::Reset);
+            .print_fbg(pos.x, pos.y, text, color, Color::Reset);
     }
 
     // Draws the main menu
@@ -207,14 +218,9 @@ impl Tui {
     // Draws the logo in the main menu
     fn draw_logo(&mut self) {
         let len = LOGO_TEXT.lines().next().unwrap_or(LOGO_TEXT).len();
-        let pos = Point::new(self.width / 2 - len as u32 / 2, self.height / 2 - 12);
-        self.engine.print_fbg(
-            pos.x as i32,
-            pos.y as i32,
-            LOGO_TEXT,
-            LOGO_COLOR,
-            Color::Reset,
-        );
+        let pos = Point::new(self.width / 2 - len as i32 / 2, self.height / 2 - 12);
+        self.engine
+            .print_fbg(pos.x, pos.y, LOGO_TEXT, LOGO_COLOR, Color::Reset);
     }
 
     // Returns the suitable color for whether a selection is selected
@@ -231,8 +237,8 @@ impl Tui {
         let mut lines = nerd.sprite.lines();
         let len = lines.next().unwrap_or(nerd.sprite).len();
         self.engine.print_fbg(
-            (self.width / 2 - len as u32 / 2) as i32 + pos,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - lines.count() as i32 - 4,
+            self.width / 2 - len as i32 / 2 + pos,
+            self.height - MAX_ACTION_MESSAGES as i32 - lines.count() as i32 - 4,
             nerd.sprite,
             Self::nerd_color(current_nerd),
             Color::Reset,
@@ -263,8 +269,7 @@ impl Tui {
         } else if *value == max && pos == 1 {
             *value = 0;
         } else {
-            let n = *value as i32 + pos;
-            *value = n as usize;
+            *value = (*value as i32 + pos) as usize;
         }
     }
 
@@ -288,7 +293,7 @@ impl Tui {
                     self.draw_action_messages();
                     self.draw_stats(nerds, current_nerd);
                     self.draw_nerds(nerds, current_nerd);
-                    self.draw_number(equation);
+                    self.draw_math(equation);
                 }
             }
         }
@@ -298,15 +303,22 @@ impl Tui {
     fn draw_action_messages(&mut self) {
         self.engine.print(
             0,
-            (self.height - MAX_ACTION_MESSAGES as u32 - 1) as i32,
+            self.height - MAX_ACTION_MESSAGES as i32 - 1,
             &HORIZONTAL_DIVIDER.repeat(self.width as usize),
         );
 
         for (i, message) in self.action_messages.iter().enumerate() {
-            self.engine.print(
+            self.engine
+                .print(1, self.height - (MAX_ACTION_MESSAGES - i) as i32, message);
+        }
+
+        if let Some(message) = self.action_messages.last() {
+            self.engine.print_fbg(
                 1,
-                (self.height - MAX_ACTION_MESSAGES as u32 + i as u32) as i32,
+                self.height - (MAX_ACTION_MESSAGES - self.action_messages.len() + 1) as i32,
                 message,
+                SELECT_COLOR,
+                Color::Reset,
             );
         }
     }
@@ -315,22 +327,22 @@ impl Tui {
     fn draw_stats(&mut self, nerds: &Nerds, current_nerd: usize) {
         self.engine.print_fbg(
             0,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            self.height - MAX_ACTION_MESSAGES as i32 - 2,
             &self.stats_string(&nerds[0]),
             Self::nerd_color(0 == current_nerd),
             Color::Reset,
         );
         let stats = self.stats_string(&nerds[1]);
         self.engine.print_fbg(
-            self.width as i32 - stats.len() as i32,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 2,
+            self.width - stats.len() as i32,
+            self.height - MAX_ACTION_MESSAGES as i32 - 2,
             &stats,
             Self::nerd_color(1 == current_nerd),
             Color::Reset,
         );
         self.engine.print(
             0,
-            self.height as i32 - MAX_ACTION_MESSAGES as i32 - 3,
+            self.height - MAX_ACTION_MESSAGES as i32 - 3,
             &HORIZONTAL_DIVIDER.repeat(self.width as usize),
         );
     }
@@ -361,31 +373,31 @@ impl Tui {
     // Draws the list of actions that the current nerd can use
     fn draw_action_list(&mut self, nerds: &Nerds, current_nerd: usize) {
         self.engine.print(
-            (self.width - ACTION_LIST_WIDTH) as i32 - 2,
+            (self.width - ACTION_LIST_WIDTH as i32) - 2,
             0,
             &VERTICAL_DIVIDER.repeat(self.height as usize - MAX_ACTION_MESSAGES - 3),
         );
 
         for (i, action) in nerds[current_nerd].actions.iter().enumerate() {
-            self.draw_action(i, &action.name());
+            self.draw_action(i as i32, &action.name(), i == self.current_action_selection);
         }
     }
 
     // Draws an action in the action list
-    fn draw_action(&mut self, pos: usize, name: &str) {
+    fn draw_action(&mut self, pos: i32, name: &str, selected: bool) {
         self.engine.print_fbg(
-            (self.width - ACTION_LIST_WIDTH) as i32,
-            pos as i32 + self.height as i32 / 2 - 4,
+            self.width - ACTION_LIST_WIDTH as i32,
+            pos + self.height / 2 - 4,
             name,
-            Self::selection_color(self.current_action_selection == pos),
+            Self::selection_color(selected),
             Color::Reset,
         );
     }
 
-    // Draws the number input bar
-    fn draw_number(&mut self, equation: &str) {
+    // Draws the math input bar
+    fn draw_math(&mut self, equation: &str) {
         self.engine
-            .print(0, 0, &format!("{}: {}", equation, self.inputted_number));
+            .print(0, 0, &format!("{}: {}", equation, self.inputted_math));
         self.engine
             .print(0, 1, &HORIZONTAL_DIVIDER.repeat(self.width as usize));
     }
@@ -409,16 +421,16 @@ impl Tui {
 
     // Processes input for solving math equations
     fn math_input(&mut self) {
+        if self.engine.is_key_pressed(KeyCode::Char('-')) && self.inputted_math.is_empty() {
+            self.inputted_math.push('-')
+        }
         for num in '0'..='9' {
             if self.engine.is_key_pressed(KeyCode::Char(num)) {
-                self.inputted_number.push(num);
+                self.inputted_math.push(num);
             }
         }
-        if self.engine.is_key_pressed(KeyCode::Char('.')) {
-            self.inputted_number.push('.')
-        }
         if self.engine.is_key_pressed(KeyCode::Backspace) {
-            self.inputted_number.pop();
+            self.inputted_math.pop();
         }
     }
 }

@@ -13,7 +13,7 @@ pub struct Game {
     current_nerd: usize,
     action_selected: usize,
     equation: String,
-    answer: f64,
+    answer: i32,
     critical: Option<bool>,
 }
 
@@ -27,7 +27,7 @@ impl Game {
             current_nerd: 0,
             action_selected: 0,
             equation: String::new(),
-            answer: 0.0,
+            answer: 0,
             critical: None,
         }
     }
@@ -113,6 +113,10 @@ impl Game {
 
     // Updates the game when entering math answer
     fn update_mathing(&mut self) {
+        if self.tui.back() {
+            self.game_state = GameState::InGame(InGameState::Choosing);
+            self.critical = None;
+        }
         if let Some(nerds) = &mut self.nerds {
             let other = usize::from(self.current_nerd == 0);
             let (equation, answer, critical) =
@@ -122,7 +126,7 @@ impl Game {
                 self.answer = answer;
                 self.critical = Some(critical);
             }
-            if let Some(num) = self.tui.number_chosen() {
+            if let Some(num) = self.tui.math_chosen() {
                 if num == self.answer {
                     if let Some(critical) = self.critical {
                         let (first, second) = nerds.split_at_mut(1);
