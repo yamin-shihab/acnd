@@ -4,7 +4,7 @@ mod tui;
 
 use crate::game::Game;
 
-// Entry point of program
+// First entry point of the game
 fn main() {
     let mut game = Game::new();
     game.main_loop();

@@ -18,10 +18,10 @@ pub type Nerds = [Nerd; 2];
 // Balanced nerd
 pub const JOE: Nerd = Nerd::new(
     "Joe",
-    2000,
+    200,
     [
-        Action::new("Slap", ActionType::Damage, 30),
-        Action::new("Band-Aid", ActionType::Heal, 20),
+        Action::new("Slap", ActionType::Damage, 3),
+        Action::new("Band-Aid", ActionType::Heal, 2),
         Action::new("Pinch", ActionType::Weaken, 2),
         Action::new("Khan Academy", ActionType::Strengthen, 2),
     ],
@@ -38,10 +38,10 @@ pub const JOE: Nerd = Nerd::new(
 // Offensive nerd
 pub const ISAAC: Nerd = Nerd::new(
     "Isaac",
-    1000,
+    100,
     [
-        Action::new("Meter Ruler Katana", ActionType::Damage, 60),
-        Action::new("Self Confidence/Motivation", ActionType::Heal, 20),
+        Action::new("Meter Ruler Katana", ActionType::Damage, 6),
+        Action::new("Self Confidence/Motivation", ActionType::Heal, 2),
         Action::new("Threaten with Scissors", ActionType::Weaken, 3),
         Action::new("Steroids", ActionType::Strengthen, 1),
     ],
@@ -58,10 +58,10 @@ pub const ISAAC: Nerd = Nerd::new(
 // Defensive nerd
 pub const WILLIAM: Nerd = Nerd::new(
     "William",
-    4000,
+    400,
     [
-        Action::new("Curse/Swear Words", ActionType::Damage, 30),
-        Action::new("Meditation", ActionType::Heal, 10),
+        Action::new("Curse/Swear Words", ActionType::Damage, 3),
+        Action::new("Meditation", ActionType::Heal, 1),
         Action::new("Intimidating Stare", ActionType::Weaken, 1),
         Action::new("Inflatable Dumbbells", ActionType::Strengthen, 3),
     ],
@@ -78,11 +78,11 @@ _//  \\\\_",
 // Healer nerd
 pub const SUZIE: Nerd = Nerd::new(
     "Suzie",
-    2000,
+    200,
     [
-        Action::new("Insult", ActionType::Damage, 15),
-        Action::new("First Aid Kit", ActionType::Heal, 40),
-        Action::new("Threaten to Tell Teacher", ActionType::Weaken, 2),
+        Action::new("Insult", ActionType::Damage, 1),
+        Action::new("First Aid Kit", ActionType::Heal, 4),
+        Action::new("Threaten to Tell Teacher", ActionType::Weaken, 1),
         Action::new("Watch Dhar Mann Video", ActionType::Strengthen, 3),
     ],
     " //\"\\\\

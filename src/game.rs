@@ -115,7 +115,6 @@ impl Game {
     fn update_mathing(&mut self) {
         if self.tui.back() {
             self.game_state = GameState::InGame(InGameState::Choosing);
-            self.critical = None;
         }
         if let Some(nerds) = &mut self.nerds {
             let other = usize::from(self.current_nerd == 0);
