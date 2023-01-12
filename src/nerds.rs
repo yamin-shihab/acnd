@@ -8,15 +8,15 @@ pub const CURRENT_NERD_COLOR: Color = Color::Green;
 pub const WAITING_NERD_COLOR: Color = Color::Red;
 
 // Values that change damage done
-pub const BASE_MULTIPLIER: i32 = 10;
-pub const CRITICAL_CHANCE: i32 = 20;
-pub const CRITICAL_MULTIPLIER: i32 = 2;
+const BASE_MULTIPLIER: i32 = 10;
+const CRITICAL_CHANCE: i32 = 20;
+const CRITICAL_MULTIPLIER: i32 = 2;
 
 // Used to represent the two players
 pub type Nerds = [Nerd; 2];
 
 // Balanced nerd
-pub const JOE: Nerd = Nerd::new(
+const JOE: Nerd = Nerd::new(
     "Joe",
     200,
     [
@@ -36,7 +36,7 @@ pub const JOE: Nerd = Nerd::new(
 );
 
 // Offensive nerd
-pub const ISAAC: Nerd = Nerd::new(
+const ISAAC: Nerd = Nerd::new(
     "Isaac",
     100,
     [
@@ -56,7 +56,7 @@ pub const ISAAC: Nerd = Nerd::new(
 );
 
 // Defensive nerd
-pub const WILLIAM: Nerd = Nerd::new(
+const WILLIAM: Nerd = Nerd::new(
     "William",
     400,
     [
@@ -76,7 +76,7 @@ _//  \\\\_",
 );
 
 // Healer nerd
-pub const SUZIE: Nerd = Nerd::new(
+const SUZIE: Nerd = Nerd::new(
     "Suzie",
     200,
     [
@@ -122,9 +122,9 @@ impl Nerd {
         }
     }
 
-    // Returns the equation to be answered, the answer to it, and whether it was a crtiical
-    pub fn equation(&self, action: usize, nerd: &Nerd) -> (String, i32, bool) {
-        let critical = Self::critical();
+    // Returns the equation to be answered and the answer to it
+    pub fn equation(&self, action: usize, nerd: &Nerd, critical: bool) -> (String, i32) {
+        let critical = if critical { CRITICAL_MULTIPLIER } else { 1 };
         let action = self.actions[action];
         match action.action_type {
             ActionType::Damage => (
@@ -133,7 +133,6 @@ impl Nerd {
                     nerd.health, action.value, self.multiplier, critical
                 ),
                 nerd.health - action.value * self.multiplier * critical,
-                critical == CRITICAL_MULTIPLIER,
             ),
             ActionType::Heal => (
                 format!(
@@ -141,19 +140,22 @@ impl Nerd {
                     self.health, action.value, self.multiplier, critical
                 ),
                 self.health + action.value * self.multiplier * critical,
-                critical == CRITICAL_MULTIPLIER,
             ),
             ActionType::Weaken => (
                 format!("{} - {} * {}", nerd.multiplier, action.value, critical),
                 nerd.multiplier - action.value * critical,
-                critical == CRITICAL_MULTIPLIER,
             ),
             ActionType::Strengthen => (
                 format!("{} + {} * {}", self.multiplier, action.value, critical),
                 self.multiplier + action.value * critical,
-                critical == CRITICAL_MULTIPLIER,
             ),
         }
+    }
+
+    // Returns a critical hit multiplier
+    pub fn critical() -> bool {
+        let rand = fastrand::i32(0..100);
+        rand < CRITICAL_CHANCE
     }
 
     // Uses the given action index
@@ -171,15 +173,6 @@ impl Nerd {
             ActionType::Strengthen => self.multiplier = value,
         }
         self.action_message(action, critical, nerd)
-    }
-
-    // Returns a critical hit multiplier
-    fn critical() -> i32 {
-        let rand = fastrand::i32(0..100);
-        if rand < CRITICAL_CHANCE {
-            return CRITICAL_MULTIPLIER;
-        }
-        1
     }
 
     // Returns a message to be displayed as a result of an action
@@ -204,9 +197,9 @@ impl Nerd {
 // Name and amount of action
 #[derive(Copy, Clone)]
 pub struct Action {
-    pub name: &'static str,
-    pub action_type: ActionType,
-    pub value: i32,
+    name: &'static str,
+    action_type: ActionType,
+    value: i32,
 }
 
 impl Action {

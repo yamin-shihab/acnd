@@ -1,4 +1,4 @@
-use crate::nerds::Nerds;
+use crate::nerds::{Nerd, Nerds};
 use crate::tui::Tui;
 
 // String used at beginning of game to introduce players
@@ -14,7 +14,7 @@ pub struct Game {
     action_selected: usize,
     equation: String,
     answer: i32,
-    critical: Option<bool>,
+    critical: bool,
 }
 
 impl Game {
@@ -28,7 +28,7 @@ impl Game {
             action_selected: 0,
             equation: String::new(),
             answer: 0,
-            critical: None,
+            critical: Nerd::critical(),
         }
     }
 
@@ -86,6 +86,14 @@ impl Game {
         if let Some(action) = self.tui.action_chosen() {
             self.action_selected = action;
             self.game_state = GameState::InGame(InGameState::Mathing);
+            let other = usize::from(self.current_nerd == 0);
+            if let Some(nerds) = &self.nerds {
+                (self.equation, self.answer) = nerds[self.current_nerd].equation(
+                    self.action_selected,
+                    &nerds[other],
+                    self.critical,
+                );
+            }
         }
     }
 
@@ -115,40 +123,32 @@ impl Game {
     fn update_mathing(&mut self) {
         if self.tui.back() {
             self.game_state = GameState::InGame(InGameState::Choosing);
+            return;
         }
         if let Some(nerds) = &mut self.nerds {
             let other = usize::from(self.current_nerd == 0);
-            let (equation, answer, critical) =
-                nerds[self.current_nerd].equation(self.action_selected, &nerds[other]);
-            if self.critical.is_none() {
-                self.equation = equation;
-                self.answer = answer;
-                self.critical = Some(critical);
-            }
             if let Some(num) = self.tui.math_chosen() {
                 if num == self.answer {
-                    if let Some(critical) = self.critical {
-                        let (first, second) = nerds.split_at_mut(1);
-                        self.tui.add_action_message(&if self.current_nerd == 0 {
-                            first[0].use_action(
-                                self.action_selected,
-                                self.answer,
-                                critical,
-                                &mut second[0],
-                            )
-                        } else {
-                            second[0].use_action(
-                                self.action_selected,
-                                self.answer,
-                                critical,
-                                &mut first[0],
-                            )
-                        });
-                    }
+                    let (first, second) = nerds.split_at_mut(1);
+                    self.tui.add_action_message(&if self.current_nerd == 0 {
+                        first[0].use_action(
+                            self.action_selected,
+                            self.answer,
+                            self.critical,
+                            &mut second[0],
+                        )
+                    } else {
+                        second[0].use_action(
+                            self.action_selected,
+                            self.answer,
+                            self.critical,
+                            &mut first[0],
+                        )
+                    });
                 }
                 self.game_state = GameState::InGame(InGameState::Choosing);
                 self.current_nerd = other;
-                self.critical = None;
+                self.critical = Nerd::critical();
             }
         }
     }

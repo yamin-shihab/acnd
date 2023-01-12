@@ -49,7 +49,7 @@ type Point = Point2D<i32, UnknownUnit>;
 
 // Manages the terminal, and whats displayed and inputted
 pub struct Tui {
-    pub engine: ConsoleEngine,
+    engine: ConsoleEngine,
     width: i32,
     height: i32,
     current_nerd_selection: usize,
