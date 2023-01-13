@@ -16,6 +16,18 @@ const UP_KEY: KeyCode = KeyCode::Up;
 const DOWN_KEY: KeyCode = KeyCode::Down;
 const LEFT_KEY: KeyCode = KeyCode::Left;
 const RIGHT_KEY: KeyCode = KeyCode::Right;
+const SECRET_SEQUENCE: [KeyCode; 10] = [
+    UP_KEY,
+    UP_KEY,
+    DOWN_KEY,
+    DOWN_KEY,
+    LEFT_KEY,
+    RIGHT_KEY,
+    LEFT_KEY,
+    RIGHT_KEY,
+    KeyCode::Char('b'),
+    KeyCode::Char('a'),
+];
 
 // Stuff displayed on the intro
 const INTRO_TEXTS: [&str; 2] = ["Let AC be Academically Challenged in:", "AC NERD DUELS"];
@@ -54,6 +66,7 @@ pub struct Tui {
     height: i32,
     current_nerd_selection: usize,
     nerd_selects: [usize; 2],
+    secret_index: usize,
     action_messages: Vec<String>,
     current_action_selection: usize,
     inputted_math: String,
@@ -73,6 +86,7 @@ impl Tui {
             height,
             current_nerd_selection: 0,
             nerd_selects: [0, 0],
+            secret_index: 0,
             action_messages: Vec::new(),
             current_action_selection: 0,
             inputted_math: String::new(),
@@ -247,9 +261,69 @@ impl Tui {
 
     // Manages input in the main menu
     fn input_menu(&mut self) {
+        self.input_secret();
+        self.input_nerd_select();
+    }
+
+    // Deals with the Konami Code and the secret nerd
+    fn input_secret(&mut self) {
+        if self.secret_index == SECRET_SEQUENCE.len() {
+            self.nerd_selects[self.current_nerd_selection] = NERDS.len() - 1;
+            self.secret_index = 0;
+        }
+        if self.secret_key((' '..='~').map(|key| KeyCode::Char(key))) {
+            return;
+        }
+        if self.secret_key((u8::MIN..=u8::MAX).map(|key| KeyCode::F(key))) {
+            return;
+        }
+        if self.secret_key([
+            KeyCode::Backspace,
+            KeyCode::Enter,
+            KeyCode::Left,
+            KeyCode::Right,
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::Home,
+            KeyCode::End,
+            KeyCode::PageUp,
+            KeyCode::PageDown,
+            KeyCode::Tab,
+            KeyCode::BackTab,
+            KeyCode::Delete,
+            KeyCode::Insert,
+            KeyCode::Null,
+            KeyCode::Esc,
+        ]) {
+            return;
+        }
+    }
+
+    // Checks whether a keycode is part of the secret, and does stuff with it
+    fn secret_key<T: IntoIterator<Item = KeyCode>>(&mut self, keys: T) -> bool {
+        for key in keys {
+            let pressed = self.engine.is_key_pressed(key);
+            if pressed && key == SECRET_SEQUENCE[self.secret_index] {
+                self.secret_index += 1;
+                return true;
+            } else if pressed {
+                self.secret_index = 0;
+                return true;
+            }
+        }
+        false
+    }
+
+    // What nerd does the player select
+    fn input_nerd_select(&mut self) {
+        let len = NERDS.len() - 1;
+        let len = if self.nerd_selects[self.current_nerd_selection] == len {
+            len
+        } else {
+            len - 1
+        };
         let select = &mut self.nerd_selects[self.current_nerd_selection];
         let selection = &mut self.current_nerd_selection;
-        let len = NERDS.len() - 1;
 
         if self.engine.is_key_pressed(UP_KEY) {
             Self::change_selected(selection, 1, 1);

@@ -1,7 +1,7 @@
 use console_engine::Color;
 
-// Array of nerds
-pub const NERDS: [&Nerd; 4] = [&JOE, &ISAAC, &WILLIAM, &SUZIE];
+// Array of nerds (last is secret)
+pub const NERDS: [&Nerd; 5] = [&JOE, &ISAAC, &WILLIAM, &SUZIE, &YAMIN];
 
 // Color of selected nerd in game and menu
 pub const CURRENT_NERD_COLOR: Color = Color::Green;
@@ -95,6 +95,26 @@ const SUZIE: Nerd = Nerd::new(
  /   \\",
 );
 
+// Overpowered nerd
+const YAMIN: Nerd = Nerd::new(
+    "Yamin",
+    1000000,
+    [
+        Action::new("Do literally nothing", ActionType::Damage, 100),
+        Action::new("Do pretty much nothing", ActionType::Heal, 100),
+        Action::new("Do basically nothing", ActionType::Weaken, 100),
+        Action::new("Do figuratively nothing", ActionType::Strengthen, 100),
+    ],
+    " ____
+/    \\
+\\ .. /
+ \\<>/
+ /||\\
+/ || \\
+ /  \\
+^    ^",
+);
+
 // A character/player with their stats
 #[derive(Copy, Clone)]
 pub struct Nerd {
@@ -154,8 +174,7 @@ impl Nerd {
 
     // Returns a critical hit multiplier
     pub fn critical() -> bool {
-        let rand = fastrand::i32(0..100);
-        rand < CRITICAL_CHANCE
+        fastrand::i32(0..100) < CRITICAL_CHANCE
     }
 
     // Uses the given action index
