@@ -1,8 +1,5 @@
 use console_engine::Color;
 
-// Array of nerds (last is secret)
-pub const NERDS: [&Nerd; 5] = [&JOE, &ISAAC, &WILLIAM, &SUZIE, &YAMIN];
-
 // Color of selected nerd in game and menu
 pub const CURRENT_NERD_COLOR: Color = Color::Green;
 pub const WAITING_NERD_COLOR: Color = Color::Red;
@@ -15,17 +12,18 @@ const CRITICAL_MULTIPLIER: i32 = 2;
 // Used to represent the two players
 pub type Nerds = [Nerd; 2];
 
-// Balanced nerd
-const JOE: Nerd = Nerd::new(
-    "Joe",
-    200,
-    [
-        Action::new("Slap", ActionType::Damage, 3),
-        Action::new("Band-Aid", ActionType::Heal, 2),
-        Action::new("Pinch", ActionType::Weaken, 2),
-        Action::new("Khan Academy", ActionType::Strengthen, 2),
-    ],
-    " / \\
+// Array of nerds (last is secret)
+pub const NERDS: [Nerd; 5] = [
+    Nerd::new(
+        "Joe",
+        200,
+        [
+            Action::new("Slap", ActionType::Damage, 3),
+            Action::new("Band-Aid", ActionType::Heal, 2),
+            Action::new("Pinch", ActionType::Weaken, 2),
+            Action::new("Khan Academy", ActionType::Strengthen, 2),
+        ],
+        " / \\
 | \" |
  \\o/
   |
@@ -33,19 +31,17 @@ const JOE: Nerd = Nerd::new(
 / | \\
  / \\
 /   \\",
-);
-
-// Offensive nerd
-const ISAAC: Nerd = Nerd::new(
-    "Isaac",
-    100,
-    [
-        Action::new("Meter Ruler Katana", ActionType::Damage, 6),
-        Action::new("Self Confidence/Motivation", ActionType::Heal, 2),
-        Action::new("Threaten with Scissors", ActionType::Weaken, 3),
-        Action::new("Steroids", ActionType::Strengthen, 1),
-    ],
-    " (\")
+    ),
+    Nerd::new(
+        "Isaac",
+        100,
+        [
+            Action::new("Meter Ruler Katana", ActionType::Damage, 6),
+            Action::new("Self Confidence/Motivation", ActionType::Heal, 2),
+            Action::new("Threaten with Scissors", ActionType::Weaken, 3),
+            Action::new("Steroids", ActionType::Strengthen, 1),
+        ],
+        " (\")
  \\-/
   |
 \\/|\\/
@@ -53,19 +49,17 @@ const ISAAC: Nerd = Nerd::new(
   |
  / \\
  | |",
-);
-
-// Defensive nerd
-const WILLIAM: Nerd = Nerd::new(
-    "William",
-    400,
-    [
-        Action::new("Curse/Swear Words", ActionType::Damage, 3),
-        Action::new("Meditation", ActionType::Heal, 1),
-        Action::new("Intimidating Stare", ActionType::Weaken, 1),
-        Action::new("Inflatable Dumbbells", ActionType::Strengthen, 3),
-    ],
-    "   __
+    ),
+    Nerd::new(
+        "William",
+        400,
+        [
+            Action::new("Curse/Swear Words", ActionType::Damage, 3),
+            Action::new("Meditation", ActionType::Heal, 1),
+            Action::new("Intimidating Stare", ActionType::Weaken, 1),
+            Action::new("Inflatable Dumbbells", ActionType::Strengthen, 3),
+        ],
+        "   __
   /''\\
 \\ \\()/ /
  \\/  \\/
@@ -73,19 +67,17 @@ const WILLIAM: Nerd = Nerd::new(
   \\  /
   //\\\\
 _//  \\\\_",
-);
-
-// Healer nerd
-const SUZIE: Nerd = Nerd::new(
-    "Suzie",
-    200,
-    [
-        Action::new("Insult", ActionType::Damage, 1),
-        Action::new("First Aid Kit", ActionType::Heal, 4),
-        Action::new("Threaten to Tell Teacher", ActionType::Weaken, 1),
-        Action::new("Watch Dhar Mann Video", ActionType::Strengthen, 3),
-    ],
-    " //\"\\\\
+    ),
+    Nerd::new(
+        "Suzie",
+        200,
+        [
+            Action::new("Insult", ActionType::Damage, 1),
+            Action::new("First Aid Kit", ActionType::Heal, 4),
+            Action::new("Threaten to Tell Teacher", ActionType::Weaken, 1),
+            Action::new("Watch Dhar Mann Video", ActionType::Strengthen, 3),
+        ],
+        " //\"\\\\
 / \\~/ \\
    |
   /|\\
@@ -93,19 +85,17 @@ const SUZIE: Nerd = Nerd::new(
    |
   / \\
  /   \\",
-);
-
-// Overpowered nerd
-const YAMIN: Nerd = Nerd::new(
-    "Yamin",
-    1000000,
-    [
-        Action::new("Do literally nothing", ActionType::Damage, 100),
-        Action::new("Do pretty much nothing", ActionType::Heal, 100),
-        Action::new("Do basically nothing", ActionType::Weaken, 100),
-        Action::new("Do figuratively nothing", ActionType::Strengthen, 100),
-    ],
-    " ____
+    ),
+    Nerd::new(
+        "Yamin",
+        1000000,
+        [
+            Action::new("Do literally nothing", ActionType::Damage, 100),
+            Action::new("Do pretty much nothing", ActionType::Heal, 100),
+            Action::new("Do basically nothing", ActionType::Weaken, 100),
+            Action::new("Do figuratively nothing", ActionType::Strengthen, 100),
+        ],
+        " ____
 /    \\
 \\ .. /
  \\<>/
@@ -113,7 +103,8 @@ const YAMIN: Nerd = Nerd::new(
 / || \\
  /  \\
 ^    ^",
-);
+    ),
+];
 
 // A character/player with their stats
 #[derive(Copy, Clone)]

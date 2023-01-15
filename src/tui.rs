@@ -121,7 +121,7 @@ impl Tui {
     // Returns the chosen nerds if the game has started
     pub fn nerds_chosen(&self) -> Option<Nerds> {
         if self.engine.is_key_pressed(START_KEY) {
-            return Some([*NERDS[self.nerd_selects[0]], *NERDS[self.nerd_selects[1]]]);
+            return Some([NERDS[self.nerd_selects[0]], NERDS[self.nerd_selects[1]]]);
         }
         None
     }
@@ -225,8 +225,8 @@ impl Tui {
             Self::selection_color(self.current_nerd_selection == 1),
         );
 
-        self.draw_nerd(NERDS[self.nerd_selects[0]], -20, current_nerd == 0);
-        self.draw_nerd(NERDS[self.nerd_selects[1]], 20, current_nerd == 1);
+        self.draw_nerd(&NERDS[self.nerd_selects[0]], -20, current_nerd == 0);
+        self.draw_nerd(&NERDS[self.nerd_selects[1]], 20, current_nerd == 1);
     }
 
     // Draws the logo in the main menu
@@ -271,13 +271,13 @@ impl Tui {
             self.nerd_selects[self.current_nerd_selection] = NERDS.len() - 1;
             self.secret_index = 0;
         }
-        if self.secret_key((' '..='~').map(|key| KeyCode::Char(key))) {
+        if self.secret_key((' '..='~').map(KeyCode::Char)) {
             return;
         }
-        if self.secret_key((u8::MIN..=u8::MAX).map(|key| KeyCode::F(key))) {
+        if self.secret_key((u8::MIN..=u8::MAX).map(KeyCode::F)) {
             return;
         }
-        if self.secret_key([
+        self.secret_key([
             KeyCode::Backspace,
             KeyCode::Enter,
             KeyCode::Left,
@@ -294,9 +294,7 @@ impl Tui {
             KeyCode::Insert,
             KeyCode::Null,
             KeyCode::Esc,
-        ]) {
-            return;
-        }
+        ]);
     }
 
     // Checks whether a keycode is part of the secret, and does stuff with it
@@ -471,7 +469,7 @@ impl Tui {
     // Draws the math input bar
     fn draw_math(&mut self, equation: &str) {
         self.engine
-            .print(0, 0, &format!("{}: {}", equation, self.inputted_math));
+            .print(0, 0, &format!("{} = {}", equation, self.inputted_math));
         self.engine
             .print(0, 1, &HORIZONTAL_DIVIDER.repeat(self.width as usize));
     }
