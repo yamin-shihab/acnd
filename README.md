@@ -1,12 +1,8 @@
-<div align=center>
-
 # let AC be Academically Challenged in: AC NERD DUELS
 
 *So I have this school math assignment where I have to make a board/card game with integer operations involved.*
 
 *I decided to make a video game (of course).*
-
-</div>
 
 ---
 
