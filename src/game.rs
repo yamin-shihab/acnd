@@ -3,7 +3,7 @@ use crate::tui::Tui;
 
 // String used at beginning of game to introduce players
 const GAME_START_MESSAGE: &str = "Two nerds bump into each other. nerd0 and nerd1 glare at each other. The fight chant is heard. The AC Nerd Duels have begun.";
-const GAME_END_MESSAGE: &str = "As the dust settles, nerd0 looks down at the unconcious nerd1 before being escorted to the principal's office.";
+const GAME_END_MESSAGE: &str = "As the dust settles, nerd0 looks down at the unconscious nerd1 before being escorted to the principal's office.";
 
 // Contains game information
 pub struct Game {
